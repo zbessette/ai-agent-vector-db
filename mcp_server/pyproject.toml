@@ -1,0 +1,24 @@
+[project]
+name = "vector-db-mcp-server"
+version = "0.1.0"
+description = "Local vector DB MCP server for RAG with Claude"
+requires-python = ">=3.12"
+dependencies = [
+    "mcp[cli]>=1.26.0",
+    "qdrant-client>=1.17.0",
+    "httpx>=0.27.0",
+    "pydantic>=2.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-asyncio>=0.24.0",
+]
+
+[tool.setuptools]
+py-modules = ["config", "namespaces", "embeddings", "schema", "storage", "search", "server"]
+
+[build-system]
+requires = ["setuptools>=75.0"]
+build-backend = "setuptools.build_meta"

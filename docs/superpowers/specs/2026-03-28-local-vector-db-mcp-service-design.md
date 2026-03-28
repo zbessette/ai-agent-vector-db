@@ -259,15 +259,24 @@ OLLAMA_PORT=11434
 
 ### Claude Desktop MCP Config
 
+Claude Desktop requires a stdio-to-SSE proxy (`mcp-remote`):
+
 ```json
 {
     "mcpServers": {
         "vector-db": {
-            "url": "http://localhost:11488/sse"
+            "command": "npx",
+            "args": [
+                "mcp-remote",
+                "http://localhost:11488/sse",
+                "--allow-http"
+            ]
         }
     }
 }
 ```
+
+Alternatively, register via **Settings > Connectors** in the Claude Desktop UI.
 
 ## First-Run Experience
 
