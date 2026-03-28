@@ -1,0 +1,39 @@
+services:
+  qdrant:
+    image: qdrant/qdrant:latest
+    volumes:
+      - ./data/qdrant:/qdrant/storage
+    restart: unless-stopped
+
+  ollama:
+    image: ollama/ollama:latest
+    volumes:
+      - ./data/ollama:/root/.ollama
+    restart: unless-stopped
+    entrypoint: >
+      sh -c "ollama serve &
+             sleep 5 &&
+             ollama pull nomic-embed-text &&
+             wait"
+
+  mcp-server:
+    build:
+      context: ./mcp_server
+    container_name: vector-db-mcp-server
+    environment:
+      - QDRANT_HOST=qdrant
+      - QDRANT_PORT=6333
+      - OLLAMA_HOST=ollama
+      - OLLAMA_PORT=11434
+      - EMBEDDING_MODEL=${EMBEDDING_MODEL:-nomic-embed-text}
+      - EMBEDDING_DIMENSIONS=${EMBEDDING_DIMENSIONS:-768}
+      - MCP_SSE_PORT=${MCP_SSE_PORT:-11488}
+      - SQLITE_PATH=/app/data/sqlite/namespaces.db
+    ports:
+      - "${MCP_SSE_PORT:-11488}:11488"
+    volumes:
+      - ./data/sqlite:/app/data/sqlite
+    depends_on:
+      - qdrant
+      - ollama
+    restart: unless-stopped
