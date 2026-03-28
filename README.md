@@ -9,11 +9,23 @@ git clone <repo-url>
 cd vector-db-service
 cp .env.example .env          # Optionally change MCP_SSE_PORT (default: 11488)
 docker compose up -d          # First run pulls ~274MB embedding model
+./setup-mcp.sh                # Auto-configures Claude Code + Claude Desktop
 ```
 
-### Connect to Claude Code
+The setup script:
+- Finds Node.js >= 20 on your system (checks PATH, nvm, Homebrew)
+- Installs `mcp-remote` if needed (required for Claude Desktop's SSE proxy)
+- Adds the `vector-db` MCP server to both Claude Code and Claude Desktop configs
+- Preserves any existing MCP servers in your config files (won't overwrite)
 
-Add to `~/.claude/settings.json`:
+After running, restart Claude Desktop (Cmd+Q, reopen).
+
+### Manual Setup
+
+<details>
+<summary>If you prefer to configure manually instead of using the setup script:</summary>
+
+**Claude Code** — Add to `~/.claude/settings.json`:
 
 ```json
 {
@@ -26,17 +38,15 @@ Add to `~/.claude/settings.json`:
 }
 ```
 
-### Connect to Claude Desktop
-
-Claude Desktop requires a stdio proxy for SSE servers. Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
+**Claude Desktop** — Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
 
 ```json
 {
   "mcpServers": {
     "vector-db": {
-      "command": "npx",
+      "command": "/absolute/path/to/node",
       "args": [
-        "mcp-remote",
+        "/absolute/path/to/mcp-remote",
         "http://localhost:11488/sse",
         "--allow-http"
       ]
@@ -45,7 +55,9 @@ Claude Desktop requires a stdio proxy for SSE servers. Add to `~/Library/Applica
 }
 ```
 
-Alternatively, register via **Settings > Connectors** in the Claude Desktop UI with the URL `http://localhost:11488/sse`.
+**Important:** Claude Desktop does not use nvm or your shell profile. You must use absolute paths to `node` and `mcp-remote` binaries (e.g., `/Users/you/.nvm/versions/node/v22.21.1/bin/node`). The setup script handles this automatically.
+
+</details>
 
 ## What It Does
 
