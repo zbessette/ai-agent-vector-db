@@ -178,7 +178,7 @@ Updates are handled as delete + re-store. No dedicated `update_entry` tool. Clau
 1. Look up namespace config from SQLite
 2. Validate that namespace status is `active`
 3. Validate payload has all required fields from `namespace_fields`
-4. Apply `embedding_instructions` as a template to produce `embedded_text` from `original_text` and payload fields
+4. Apply `embedding_instructions` as a Python format string template (using `str.format_map()`) to produce `embedded_text` from `original_text` and payload fields. Template variables reference payload field names, e.g., `"{card_name}. {type_line} — {subtypes}. {original_text}. Synergies: {tags}"`. If the template is a plain string with no variables, `original_text` is used as-is.
 5. Call Ollama (`nomic-embed-text`) to generate embedding from `embedded_text`
 6. Store vector + full payload (including `original_text` and `embedded_text`) in Qdrant
 7. Return entry ID
@@ -279,6 +279,15 @@ docker compose up -d          # Starts Qdrant, Ollama, MCP server
 # Add MCP config to Claude Code or Claude Desktop
 # Done — Claude now has vector DB tools available
 ```
+
+### Bootstrap: Context Namespace
+
+On first startup, the MCP server automatically creates the `context` namespace in SQLite (status `active`) and its Qdrant collection. This is the only pre-seeded namespace. Its configuration:
+
+- **name:** `context`
+- **embedding_instructions:** `"Combine the original_text with the reasoning field. Focus on the problem being solved and the approach chosen."`
+- **include_context:** `false` (it IS the context collection — no self-referential dual-query)
+- **Required fields:** `related_namespaces` (string[]), `decision_type` (string), `reasoning` (string)
 
 ## Re-indexing Strategy
 
