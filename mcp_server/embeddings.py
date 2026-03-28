@@ -13,4 +13,8 @@ class OllamaEmbedder:
             timeout=60.0,
         )
         response.raise_for_status()
-        return response.json()["embedding"]
+        data = response.json()
+        # Ollama /api/embed returns "embeddings" (list) for single or batch input
+        if "embeddings" in data:
+            return data["embeddings"][0]
+        return data["embedding"]
