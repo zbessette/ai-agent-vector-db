@@ -136,3 +136,55 @@ class NamespaceRegistry:
         self.conn.execute(f"UPDATE namespaces SET {set_clause} WHERE name = ?", values)
         self.conn.commit()
         return self.get(name)
+
+    def update_proposal(self, name: str, fields: list[dict] | None = None, **kwargs) -> dict:
+        ns = self.get(name)
+        if ns is None:
+            raise ValueError(f"Namespace '{name}' not found")
+        if ns["status"] != "proposed":
+            raise ValueError(
+                f"Cannot update proposal for namespace '{name}': status is '{ns['status']}'. "
+                "Only proposed namespaces can have fields updated."
+            )
+
+        # Replace fields if provided (None = keep existing, [] = clear all)
+        if fields is not None:
+            self.conn.execute(
+                "DELETE FROM namespace_fields WHERE namespace_id = ?", (ns["id"],)
+            )
+            for field in fields:
+                self.conn.execute(
+                    """INSERT INTO namespace_fields
+                       (id, namespace_id, field_name, field_type, required, description, filterable)
+                       VALUES (?, ?, ?, ?, ?, ?, ?)""",
+                    (str(uuid.uuid4()), ns["id"], field["field_name"], field["field_type"],
+                     field.get("required", False), field.get("description", ""),
+                     field.get("filterable", True)),
+                )
+
+        # Update top-level fields (same as update())
+        allowed = {"description", "embedding_instructions", "summary_instructions", "include_context"}
+        updates = {k: v for k, v in kwargs.items() if k in allowed and v is not None}
+        if updates or fields is not None:
+            now = datetime.now(timezone.utc).isoformat()
+            updates["updated_at"] = now
+            set_clause = ", ".join(f"{k} = ?" for k in updates)
+            values = list(updates.values()) + [name]
+            self.conn.execute(f"UPDATE namespaces SET {set_clause} WHERE name = ?", values)
+
+        self.conn.commit()
+        return self.get(name)
+
+    def delete(self, name: str) -> dict:
+        ns = self.get(name)
+        if ns is None:
+            raise ValueError(f"Namespace '{name}' not found")
+
+        self.conn.execute(
+            "DELETE FROM namespace_fields WHERE namespace_id = ?", (ns["id"],)
+        )
+        self.conn.execute(
+            "DELETE FROM namespaces WHERE id = ?", (ns["id"],)
+        )
+        self.conn.commit()
+        return {"name": name, "status": ns["status"]}

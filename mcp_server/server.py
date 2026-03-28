@@ -184,6 +184,84 @@ def update_namespace_config(
         return json.dumps({"error": str(e)})
 
 
+@mcp.tool()
+def update_proposal(
+    namespace: str,
+    fields: str = "",
+    description: str = "",
+    embedding_instructions: str = "",
+    summary_instructions: str = "",
+    include_context: bool | None = None,
+) -> str:
+    """Update a proposed namespace before confirmation. Can replace the fields
+    list entirely (JSON array) and/or update top-level config. Only works on
+    namespaces with status='proposed' — fields cannot be changed once active."""
+    try:
+        parsed_fields = None
+        if fields:
+            parsed_fields = json.loads(fields)
+
+        kwargs = {}
+        if description:
+            kwargs["description"] = description
+        if embedding_instructions:
+            kwargs["embedding_instructions"] = embedding_instructions
+        if summary_instructions:
+            kwargs["summary_instructions"] = summary_instructions
+        if include_context is not None:
+            kwargs["include_context"] = include_context
+
+        ns = registry.update_proposal(namespace, fields=parsed_fields, **kwargs)
+        return json.dumps({"status": "updated", "config": ns}, indent=2)
+    except (ValueError, json.JSONDecodeError) as e:
+        return json.dumps({"error": str(e)})
+
+
+@mcp.tool()
+def delete_namespace(namespace: str, confirm: bool = False) -> str:
+    """Delete a namespace and all its data. First call without confirm=True to
+    see how many entries will be lost. Then call again with confirm=True to
+    actually delete. Removes the Qdrant collection (if it exists), namespace
+    fields, and the namespace record."""
+    try:
+        ns = registry.get(namespace)
+        if ns is None:
+            return json.dumps({"error": f"Namespace '{namespace}' not found"})
+
+        entry_count = 0
+        has_collection = False
+        if ns["status"] == "active":
+            try:
+                has_collection = qdrant.collection_exists(ns["qdrant_collection"])
+                if has_collection:
+                    collection_info = qdrant.get_collection(ns["qdrant_collection"])
+                    entry_count = collection_info.points_count
+            except Exception:
+                pass
+
+        if not confirm:
+            return json.dumps({
+                "warning": f"This will permanently delete namespace '{namespace}'.",
+                "status": ns["status"],
+                "entries_to_delete": entry_count,
+                "action_required": f"Call delete_namespace again with namespace='{namespace}' and confirm=True to proceed.",
+            }, indent=2)
+
+        # Actually delete
+        if has_collection:
+            qdrant.delete_collection(ns["qdrant_collection"])
+
+        registry.delete(namespace)
+
+        return json.dumps({
+            "status": "deleted",
+            "namespace": namespace,
+            "entries_deleted": entry_count,
+        })
+    except ValueError as e:
+        return json.dumps({"error": str(e)})
+
+
 # --- Data Operation Tools ---
 
 @mcp.tool()
