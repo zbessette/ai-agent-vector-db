@@ -178,7 +178,7 @@ Updates are handled as delete + re-store. No dedicated `update_entry` tool. Clau
 1. Look up namespace config from SQLite
 2. Validate that namespace status is `active`
 3. Validate payload has all required fields from `namespace_fields`
-4. Apply `embedding_instructions` as a Python format string template (using `str.format_map()`) to produce `embedded_text` from `original_text` and payload fields. Template variables reference payload field names, e.g., `"{card_name}. {type_line} — {subtypes}. {original_text}. Synergies: {tags}"`. If the template is a plain string with no variables, `original_text` is used as-is.
+4. Apply `embedding_instructions` as a Python `string.Template` (using `$var` syntax) to produce `embedded_text` from `original_text` and payload fields. Template variables reference payload field names, e.g., `"$card_name. $type_line — $subtypes. $original_text. Synergies: $tags"`. The `$` syntax avoids conflicts with literal braces in payload values (e.g., MTG mana costs like `{2}{B}{B}`). If the template contains no `$` variables, `original_text` is used as-is.
 5. Call Ollama (`nomic-embed-text`) to generate embedding from `embedded_text`
 6. Store vector + full payload (including `original_text` and `embedded_text`) in Qdrant
 7. Return entry ID
