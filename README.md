@@ -90,6 +90,22 @@ All persistent data lives in `data/` (gitignored):
 - `data/sqlite/` — Namespace registry
 - `data/ollama/` — Model cache
 
+## Project Instructions & Skills
+
+Example instructions you can add to Claude Desktop projects or CLAUDE.md files to teach Claude how to use the vector DB automatically:
+
+| Template | Use case |
+|----------|----------|
+| [`examples/project-instructions/general-purpose.md`](examples/project-instructions/general-purpose.md) | Any project — search on task start, store decisions on completion, capture positive feedback |
+| [`examples/project-instructions/code-project-with-jira.md`](examples/project-instructions/code-project-with-jira.md) | Code projects with Jira — adds ticket/commit storage workflow |
+| [`examples/project-instructions/vector-db-first.md`](examples/project-instructions/vector-db-first.md) | Reduce context bloat — vector DB as primary knowledge source, static files as fallback |
+
+Copy the instructions from any template into your Claude Desktop project's custom instructions or your project's CLAUDE.md file.
+
+### Custom Skill
+
+[`examples/skills/store-context.md`](examples/skills/store-context.md) — A `/store-context` skill for Claude Code that standardizes how decisions and ticket completions get captured. Supports interactive, decision, and ticket modes.
+
 ## Development
 
 ```bash
