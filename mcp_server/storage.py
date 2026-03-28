@@ -3,9 +3,14 @@ from datetime import datetime, timezone
 
 from qdrant_client.models import PointStruct, PointIdsList
 
-from mcp_server.namespaces import NamespaceRegistry
-from mcp_server.embeddings import OllamaEmbedder
-from mcp_server.schema import validate_payload, apply_embedding_template
+try:
+    from mcp_server.namespaces import NamespaceRegistry
+    from mcp_server.embeddings import OllamaEmbedder
+    from mcp_server.schema import validate_payload, apply_embedding_template
+except ImportError:
+    from namespaces import NamespaceRegistry
+    from embeddings import OllamaEmbedder
+    from schema import validate_payload, apply_embedding_template
 
 
 class StorageManager:

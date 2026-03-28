@@ -1,7 +1,11 @@
 from qdrant_client.models import Filter, FieldCondition, MatchValue, MatchAny
 
-from mcp_server.namespaces import NamespaceRegistry
-from mcp_server.embeddings import OllamaEmbedder
+try:
+    from mcp_server.namespaces import NamespaceRegistry
+    from mcp_server.embeddings import OllamaEmbedder
+except ImportError:
+    from namespaces import NamespaceRegistry
+    from embeddings import OllamaEmbedder
 
 
 class SearchManager:

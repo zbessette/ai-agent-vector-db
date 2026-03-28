@@ -17,7 +17,7 @@ from embeddings import OllamaEmbedder
 from storage import StorageManager
 from search import SearchManager
 
-mcp = FastMCP("vector-db")
+mcp = FastMCP("vector-db", host="0.0.0.0", port=MCP_SSE_PORT)
 
 # --- Globals initialized in init_services() ---
 registry: NamespaceRegistry = None
@@ -345,7 +345,7 @@ def main():
     if "--stdio" in sys.argv:
         mcp.run(transport="stdio")
     else:
-        mcp.run(transport="sse", host="0.0.0.0", port=MCP_SSE_PORT)
+        mcp.run(transport="sse")
 
 
 if __name__ == "__main__":
