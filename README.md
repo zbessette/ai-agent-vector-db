@@ -28,17 +28,24 @@ Add to `~/.claude/settings.json`:
 
 ### Connect to Claude Desktop
 
-Add to your Claude Desktop config:
+Claude Desktop requires a stdio proxy for SSE servers. Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
 
 ```json
 {
   "mcpServers": {
     "vector-db": {
-      "url": "http://localhost:11488/sse"
+      "command": "npx",
+      "args": [
+        "mcp-remote",
+        "http://localhost:11488/sse",
+        "--allow-http"
+      ]
     }
   }
 }
 ```
+
+Alternatively, register via **Settings > Connectors** in the Claude Desktop UI with the URL `http://localhost:11488/sse`.
 
 ## What It Does
 
