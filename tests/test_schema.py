@@ -4,31 +4,31 @@ from mcp_server.schema import validate_payload, apply_embedding_template
 
 def test_validate_payload_passes_with_all_required_fields():
     fields = [
-        {"field_name": "card_name", "field_type": "string", "required": True},
-        {"field_name": "colors", "field_type": "string[]", "required": True},
+        {"field_name": "prompt_text", "field_type": "string", "required": True},
+        {"field_name": "style", "field_type": "string[]", "required": True},
         {"field_name": "tags", "field_type": "string[]", "required": False},
     ]
-    payload = {"card_name": "Sheoldred", "colors": ["B"]}
+    payload = {"prompt_text": "A sunset over mountains", "style": ["photorealistic"]}
     errors = validate_payload(payload, fields)
     assert errors == []
 
 
 def test_validate_payload_fails_missing_required_field():
     fields = [
-        {"field_name": "card_name", "field_type": "string", "required": True},
-        {"field_name": "colors", "field_type": "string[]", "required": True},
+        {"field_name": "prompt_text", "field_type": "string", "required": True},
+        {"field_name": "style", "field_type": "string[]", "required": True},
     ]
-    payload = {"card_name": "Sheoldred"}
+    payload = {"prompt_text": "A sunset over mountains"}
     errors = validate_payload(payload, fields)
     assert len(errors) == 1
-    assert "colors" in errors[0]
+    assert "style" in errors[0]
 
 
 def test_validate_payload_fails_wrong_type_string():
     fields = [
-        {"field_name": "card_name", "field_type": "string", "required": True},
+        {"field_name": "prompt_text", "field_type": "string", "required": True},
     ]
-    payload = {"card_name": 123}
+    payload = {"prompt_text": 123}
     errors = validate_payload(payload, fields)
     assert len(errors) == 1
     assert "string" in errors[0].lower()
@@ -36,18 +36,18 @@ def test_validate_payload_fails_wrong_type_string():
 
 def test_validate_payload_fails_wrong_type_string_array():
     fields = [
-        {"field_name": "colors", "field_type": "string[]", "required": True},
+        {"field_name": "style", "field_type": "string[]", "required": True},
     ]
-    payload = {"colors": "B"}
+    payload = {"style": "photorealistic"}
     errors = validate_payload(payload, fields)
     assert len(errors) == 1
 
 
 def test_validate_payload_passes_int_type():
     fields = [
-        {"field_name": "cmc", "field_type": "int", "required": True},
+        {"field_name": "revision_count", "field_type": "int", "required": True},
     ]
-    payload = {"cmc": 4}
+    payload = {"revision_count": 4}
     errors = validate_payload(payload, fields)
     assert errors == []
 
@@ -63,33 +63,33 @@ def test_validate_payload_passes_float_type():
 
 def test_validate_payload_passes_bool_type():
     fields = [
-        {"field_name": "active", "field_type": "bool", "required": True},
+        {"field_name": "approved", "field_type": "bool", "required": True},
     ]
-    payload = {"active": True}
+    payload = {"approved": True}
     errors = validate_payload(payload, fields)
     assert errors == []
 
 
 def test_apply_embedding_template_with_variables():
-    template = "$card_name. $type_line. $original_text"
-    payload = {"card_name": "Sheoldred", "type_line": "Creature", "original_text": "Deathtouch"}
+    template = "$prompt_text. $style. $original_text"
+    payload = {"prompt_text": "A sunset over mountains", "style": "photorealistic", "original_text": "warm tones, golden hour"}
     result = apply_embedding_template(template, payload)
-    assert result == "Sheoldred. Creature. Deathtouch"
+    assert result == "A sunset over mountains. photorealistic. warm tones, golden hour"
 
 
 def test_apply_embedding_template_without_variables():
     template = "Just embed the original text as-is"
-    payload = {"original_text": "Some card text"}
+    payload = {"original_text": "A sunset over mountains with warm lighting"}
     result = apply_embedding_template(template, payload)
-    assert result == "Some card text"
+    assert result == "A sunset over mountains with warm lighting"
 
 
 def test_apply_embedding_template_handles_braces_in_values():
-    template = "$card_name. $mana_cost. $original_text"
+    template = "$prompt_text. $aspect_ratio. $original_text"
     payload = {
-        "card_name": "Sheoldred",
-        "mana_cost": "{2}{B}{B}",
-        "original_text": "Deathtouch",
+        "prompt_text": "A sunset over mountains",
+        "aspect_ratio": "{16:9}",
+        "original_text": "warm tones",
     }
     result = apply_embedding_template(template, payload)
-    assert result == "Sheoldred. {2}{B}{B}. Deathtouch"
+    assert result == "A sunset over mountains. {16:9}. warm tones"

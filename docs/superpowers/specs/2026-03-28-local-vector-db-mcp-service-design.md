@@ -7,7 +7,7 @@ A local, Dockerized vector database service with an MCP (Model Context Protocol)
 ## Goals
 
 - Provide Claude with persistent, searchable knowledge across conversations
-- Support multiple isolated domains (MTG cards, Jira/code context, etc.) via separate Qdrant collections
+- Support multiple isolated domains (image generation history, Jira/code context, etc.) via separate Qdrant collections
 - Capture decision-making context (direction changes, preferences, patterns) as cross-cutting knowledge
 - Ensure embedding consistency through namespace-level instructions and schema validation
 - Preserve all original text for future re-indexing if the embedding model changes
@@ -114,27 +114,23 @@ The `context` collection is a special namespace for cross-cutting decision knowl
 
 The `context` collection has its own entry in the `namespaces` table with its own `embedding_instructions` (e.g., "embed the decision summary and reasoning together, focus on the problem being solved and the approach chosen").
 
-### Example: MTG Card Payload
+### Example: Image Generation Session Payload
 
 ```json
 {
-    "original_text": "Sheoldred, the Apocalypse {2}{B}{B} Legendary Creature — Phyrexian Praetor. Deathtouch. Whenever you draw a card, you gain 2 life. Whenever an opponent draws a card, they lose 2 life. 4/5",
-    "embedded_text": "Sheoldred, the Apocalypse. Legendary Creature — Phyrexian Praetor. Deathtouch. Whenever you draw a card, you gain 2 life. Whenever an opponent draws a card, they lose 2 life. 4/5. Synergies: card draw engines, lifegain payoffs, opponent punishment strategies.",
-    "entry_type": "card",
-    "source_id": "Sheoldred, the Apocalypse",
+    "original_text": "User requested a sunset over mountains. Initial prompt: 'A vibrant sunset over mountain peaks, photorealistic.' Revision 1: User asked to add warm golden hour lighting and remove clouds. Revision 2: User preferred muted earth tones over vibrant colors. Final approved prompt: 'A muted, warm-toned sunset over mountain peaks in golden hour lighting, photorealistic, no clouds, earth tone palette.'",
+    "embedded_text": "Sunset over mountains. Photorealistic. User preferences: muted earth tones over vibrant colors, golden hour lighting, no clouds. Revision pattern: started vibrant, user preferred muted warm tones.",
+    "entry_type": "image_session",
+    "source_id": "session-2026-03-28-001",
     "source_url": null,
-    "tags": ["staple", "commander"],
+    "tags": ["landscape", "sunset", "photorealistic"],
     "created_at": "2026-03-28T12:00:00Z",
     "updated_at": "2026-03-28T12:00:00Z",
-    "card_name": "Sheoldred, the Apocalypse",
-    "colors": ["B"],
-    "mana_cost": "{2}{B}{B}",
-    "cmc": 4,
-    "type_line": "Legendary Creature",
-    "subtypes": ["Phyrexian", "Praetor"],
-    "rarity": "mythic",
-    "set": "DMU",
-    "quantity": 2
+    "prompt_text": "A muted, warm-toned sunset over mountain peaks in golden hour lighting, photorealistic, no clouds, earth tone palette.",
+    "style": ["photorealistic", "earth-tones", "golden-hour"],
+    "revision_count": 2,
+    "revision_notes": ["Add warm golden hour lighting, remove clouds", "Prefer muted earth tones over vibrant colors"],
+    "subject": "landscape"
 }
 ```
 
@@ -178,7 +174,7 @@ Updates are handled as delete + re-store. No dedicated `update_entry` tool. Clau
 1. Look up namespace config from SQLite
 2. Validate that namespace status is `active`
 3. Validate payload has all required fields from `namespace_fields`
-4. Apply `embedding_instructions` as a Python `string.Template` (using `$var` syntax) to produce `embedded_text` from `original_text` and payload fields. Template variables reference payload field names, e.g., `"$card_name. $type_line — $subtypes. $original_text. Synergies: $tags"`. The `$` syntax avoids conflicts with literal braces in payload values (e.g., MTG mana costs like `{2}{B}{B}`). If the template contains no `$` variables, `original_text` is used as-is.
+4. Apply `embedding_instructions` as a Python `string.Template` (using `$var` syntax) to produce `embedded_text` from `original_text` and payload fields. Template variables reference payload field names, e.g., `"$prompt_text. $style. $original_text. Revision notes: $revision_notes"`. The `$` syntax avoids conflicts with literal braces in payload values (e.g., aspect ratios like `{16:9}`). If the template contains no `$` variables, `original_text` is used as-is.
 5. Call Ollama (`nomic-embed-text`) to generate embedding from `embedded_text`
 6. Store vector + full payload (including `original_text` and `embedded_text`) in Qdrant
 7. Return entry ID

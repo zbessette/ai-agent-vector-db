@@ -4,20 +4,20 @@ from mcp_server.namespaces import NamespaceRegistry
 
 def test_create_namespace(registry):
     ns = registry.create(
-        name="mtg-cards",
-        description="Magic: The Gathering card collection",
-        embedding_instructions="$card_name. $type_line. $original_text",
+        name="image-gen",
+        description="Image generation prompts and revision history",
+        embedding_instructions="$prompt_text. $style. $original_text",
         summary_instructions=None,
         include_context=True,
         fields=[
-            {"field_name": "card_name", "field_type": "string", "required": True,
-             "description": "Card name", "filterable": True},
-            {"field_name": "colors", "field_type": "string[]", "required": True,
-             "description": "Color identity", "filterable": True},
+            {"field_name": "prompt_text", "field_type": "string", "required": True,
+             "description": "Final approved prompt", "filterable": False},
+            {"field_name": "style", "field_type": "string[]", "required": True,
+             "description": "Visual style tags", "filterable": True},
         ],
     )
-    assert ns["name"] == "mtg-cards"
-    assert ns["qdrant_collection"] == "mtg-cards"
+    assert ns["name"] == "image-gen"
+    assert ns["qdrant_collection"] == "image-gen"
     assert ns["status"] == "proposed"
     assert len(ns["fields"]) == 2
 
@@ -71,9 +71,9 @@ def test_confirm_already_active_raises(registry):
 def test_update_namespace(registry):
     registry.create(name="test", description="old", embedding_instructions="$original_text", fields=[])
     registry.confirm("test")
-    ns = registry.update("test", description="new", embedding_instructions="$card_name $original_text")
+    ns = registry.update("test", description="new", embedding_instructions="$prompt_text $original_text")
     assert ns["description"] == "new"
-    assert ns["embedding_instructions"] == "$card_name $original_text"
+    assert ns["embedding_instructions"] == "$prompt_text $original_text"
 
 
 def test_get_namespace_includes_fields(registry):
@@ -118,9 +118,9 @@ def test_update_proposal_replaces_fields(registry):
 
 def test_update_proposal_updates_top_level(registry):
     registry.create(name="test", description="old", embedding_instructions="$original_text", fields=[])
-    ns = registry.update_proposal("test", description="new", embedding_instructions="$card_name")
+    ns = registry.update_proposal("test", description="new", embedding_instructions="$prompt_text")
     assert ns["description"] == "new"
-    assert ns["embedding_instructions"] == "$card_name"
+    assert ns["embedding_instructions"] == "$prompt_text"
 
 
 def test_update_proposal_rejects_active_namespace(registry):
