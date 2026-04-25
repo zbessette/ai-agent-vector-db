@@ -48,7 +48,7 @@
 </div>
 
 {% else %}
-<div hx-get="/namespaces/{{ ns.name }}/entries-partial?limit=20&offset=0" hx-trigger="load" hx-swap="innerHTML">
+<div hx-get="/namespaces/{{ ns.name }}/entries-partial?limit=20" hx-trigger="load" hx-swap="innerHTML">
   <div class="text-sm text-slate-500">Loading entries...</div>
 </div>
 {% endif %}

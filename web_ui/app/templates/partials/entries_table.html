@@ -14,7 +14,8 @@
       <tr class="border-t border-slate-100" id="entry-{{ e.id }}">
         <td class="px-4 py-2 font-mono text-xs">{{ e.id }}</td>
         <td class="px-4 py-2">{{ e.payload.entry_type }}</td>
-        <td class="px-4 py-2">{{ (e.payload.original_text or '')[:120] }}{% if (e.payload.original_text or '')|length > 120 %}…{% endif %}</td>
+        {% set text = e.payload.original_text or '' %}
+        <td class="px-4 py-2">{{ text[:120] }}{% if text|length > 120 %}…{% endif %}</td>
         <td class="px-4 py-2 text-xs text-slate-500">{{ e.payload.created_at }}</td>
         <td class="px-4 py-2 text-right">
           {# Edit/Delete actions added in Task 6 #}

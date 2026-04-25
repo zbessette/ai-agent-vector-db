@@ -7,6 +7,7 @@ from qdrant_client.http.exceptions import UnexpectedResponse
 
 from mcp_server.namespaces import NamespaceRegistry
 from ..deps import get_qdrant, get_registry, get_storage
+from ..errors import AppError
 
 logger = logging.getLogger(__name__)
 
@@ -84,7 +85,6 @@ def register(templates: Jinja2Templates) -> APIRouter:
     ):
         ns = registry.get(name)
         if ns is None:
-            from ..errors import AppError
             raise AppError(f"Namespace '{name}' not found", status_code=404)
 
         try:
@@ -109,21 +109,18 @@ def register(templates: Jinja2Templates) -> APIRouter:
         request: Request,
         name: str,
         limit: int = 20,
-        offset: int = 0,
         registry: NamespaceRegistry = Depends(get_registry),
         storage=Depends(get_storage),
     ):
         ns = registry.get(name)
         if ns is None:
-            from ..errors import AppError
             raise AppError(f"Namespace '{name}' not found", status_code=404)
-        # Qdrant scroll uses an opaque cursor; for v1 we accept int offset and ignore the cursor.
-        # Real cursor pagination is a follow-up.
+        # Cursor pagination is a follow-up; v1 returns the first `limit` entries.
         entries = storage.list_entries(namespace=name, limit=limit, offset=None)
         return templates.TemplateResponse(
             request,
             "partials/entries_table.html",
-            {"ns": ns, "entries": entries, "limit": limit, "offset": offset},
+            {"ns": ns, "entries": entries, "limit": limit},
         )
 
     return router

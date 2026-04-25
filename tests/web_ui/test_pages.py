@@ -93,7 +93,7 @@ def test_entries_partial_returns_rows(client, registry, mock_qdrant):
     scroll_result.next_page_offset = None
     mock_qdrant.scroll.return_value = scroll_result
 
-    response = client.get("/namespaces/alpha/entries-partial?limit=10&offset=0")
+    response = client.get("/namespaces/alpha/entries-partial?limit=10")
     assert response.status_code == 200
     assert "uuid-1" in response.text
     assert "Hello world" in response.text
