@@ -156,3 +156,81 @@ def test_search_results_threshold_filters_low_scores(client, registry, mock_qdra
     assert response.status_code == 200
     assert "high-id" in response.text
     assert "low-id" not in response.text
+
+
+def test_reports_page_renders(client, registry):
+    registry.create(name="alpha", description="d", embedding_instructions="$original_text", fields=[])
+    registry.confirm("alpha")
+    response = client.get("/reports")
+    assert response.status_code == 200
+    assert "Reports" in response.text
+    assert "alpha" in response.text
+
+
+def test_reports_generate_html(client, registry, mock_qdrant):
+    from unittest.mock import MagicMock
+    registry.create(
+        name="alpha",
+        description="d",
+        embedding_instructions="$original_text",
+        fields=[
+            {"field_name": "category", "field_type": "string", "required": True,
+             "description": "c", "filterable": True},
+        ],
+    )
+    registry.confirm("alpha")
+
+    fake_point = MagicMock()
+    fake_point.id = "u1"
+    fake_point.payload = {
+        "original_text": "hi",
+        "entry_type": "note",
+        "category": "a",
+        "created_at": "2026-04-15T00:00:00+00:00",
+    }
+    scroll_result = MagicMock()
+    scroll_result.points = [fake_point]
+    mock_qdrant.scroll.return_value = scroll_result
+
+    response = client.post(
+        "/reports/generate",
+        data={
+            "title": "My report",
+            "namespace": "alpha",
+            "columns": ["id", "category"],
+            "max_rows": "100",
+            "format": "html",
+        },
+    )
+    assert response.status_code == 200
+    assert "My report" in response.text
+    assert "Generated at" in response.text
+    assert "u1" in response.text
+
+
+def test_reports_api_csv_download(client, registry, mock_qdrant):
+    from unittest.mock import MagicMock
+    registry.create(name="alpha", description="d", embedding_instructions="$original_text", fields=[])
+    registry.confirm("alpha")
+
+    fake_point = MagicMock()
+    fake_point.id = "u1"
+    fake_point.payload = {"original_text": "hi", "entry_type": "note", "created_at": "2026-04-15T00:00:00+00:00"}
+    scroll_result = MagicMock()
+    scroll_result.points = [fake_point]
+    mock_qdrant.scroll.return_value = scroll_result
+
+    response = client.post(
+        "/api/reports/generate",
+        json={
+            "title": "csv-report",
+            "namespace": "alpha",
+            "columns": ["id"],
+            "max_rows": 100,
+            "format": "csv",
+        },
+    )
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith("text/csv")
+    assert "# title: csv-report" in response.text
+    assert "u1" in response.text

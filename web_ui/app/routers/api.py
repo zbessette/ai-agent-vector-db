@@ -14,6 +14,8 @@ from ..services.validation import (
     NamespaceCreateRequest, NamespaceUpdateRequest,
     SearchRequest,
 )
+from ..services.validation import ReportRequest as ReportRequestModel
+from ..services.reports import generate_report as _gen_report, render_csv as _render_csv, render_json as _render_json
 
 
 def register(templates: Jinja2Templates) -> APIRouter:
@@ -153,6 +155,29 @@ def register(templates: Jinja2Templates) -> APIRouter:
             raise AppError(f"Namespace '{name}' not found", status_code=404)
         storage.delete(namespace=name, entry_id=entry_id)
         return Response(status_code=204)
+
+    @router.post("/reports/generate")
+    def generate_report_endpoint(
+        body: ReportRequestModel,
+        storage: StorageManager = Depends(get_storage),
+        registry: NamespaceRegistry = Depends(get_registry),
+    ):
+        if registry.get(body.namespace) is None:
+            raise AppError(f"Namespace '{body.namespace}' not found", status_code=404)
+        result = _gen_report(storage, body)
+        if body.format == "csv":
+            return Response(
+                content=_render_csv(result),
+                media_type="text/csv",
+                headers={"Content-Disposition": f'attachment; filename="{body.title}.csv"'},
+            )
+        if body.format == "json":
+            return Response(
+                content=_render_json(result),
+                media_type="application/json",
+            )
+        # html format from the API: return the JSON-shaped result so external clients can render it themselves.
+        return Response(content=_render_json(result), media_type="application/json")
 
     @router.post("/search")
     def search(

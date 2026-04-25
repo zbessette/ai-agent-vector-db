@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+{% block title %}Reports{% endblock %}
+{% block content %}
+<h1 class="text-2xl font-semibold mb-4">Reports</h1>
+
+<form method="post" action="/reports/generate" class="bg-white rounded-lg border border-slate-200 p-4 mb-6 grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
+  <div class="md:col-span-3">
+    <label class="block text-slate-600 mb-1">Title <span class="text-red-500">*</span></label>
+    <input name="title" required maxlength="200" value="{{ form.title if form else '' }}" class="w-full border border-slate-300 rounded px-2 py-1">
+  </div>
+
+  <div>
+    <label class="block text-slate-600 mb-1">Namespace <span class="text-red-500">*</span></label>
+    <select name="namespace" required class="w-full border border-slate-300 rounded px-2 py-1">
+      <option value="">-- select --</option>
+      {% for n in namespaces %}
+      <option value="{{ n.name }}" {% if n.name == selected_namespace %}selected{% endif %}>{{ n.name }}</option>
+      {% endfor %}
+    </select>
+  </div>
+
+  <div>
+    <label class="block text-slate-600 mb-1">Entry type filter</label>
+    <input name="entry_type" maxlength="64" value="{{ form.entry_type if form and form.entry_type else '' }}" class="w-full border border-slate-300 rounded px-2 py-1">
+  </div>
+
+  <div>
+    <label class="block text-slate-600 mb-1">Max rows</label>
+    <input name="max_rows" type="number" min="1" max="10000" value="{{ form.max_rows if form else 1000 }}" class="w-full border border-slate-300 rounded px-2 py-1">
+  </div>
+
+  <div>
+    <label class="block text-slate-600 mb-1">Date from (ISO)</label>
+    <input name="date_from" placeholder="2026-04-01T00:00:00+00:00" value="{{ form.date_from if form and form.date_from else '' }}" class="w-full border border-slate-300 rounded px-2 py-1">
+  </div>
+  <div>
+    <label class="block text-slate-600 mb-1">Date to (ISO)</label>
+    <input name="date_to" placeholder="2026-04-30T23:59:59+00:00" value="{{ form.date_to if form and form.date_to else '' }}" class="w-full border border-slate-300 rounded px-2 py-1">
+  </div>
+
+  <div class="md:col-span-3">
+    <label class="block text-slate-600 mb-1">Columns <span class="text-red-500">*</span> (pick at least one)</label>
+    <div class="flex flex-wrap gap-3">
+      {% set fixed_cols = ["id", "original_text", "entry_type", "created_at"] %}
+      {% for c in fixed_cols %}
+      <label class="flex items-center gap-1"><input type="checkbox" name="columns" value="{{ c }}" checked> {{ c }}</label>
+      {% endfor %}
+      {% if ns_obj %}
+        {% for f in ns_obj.fields %}
+        <label class="flex items-center gap-1"><input type="checkbox" name="columns" value="{{ f.field_name }}"> {{ f.field_name }}</label>
+        {% endfor %}
+      {% endif %}
+    </div>
+  </div>
+
+  <input type="hidden" name="format" value="html">
+
+  <div class="md:col-span-3">
+    <button class="bg-blue-600 text-white px-3 py-1.5 rounded">Generate</button>
+  </div>
+</form>
+
+{% if result %}
+<div class="bg-white rounded-lg border border-slate-200 p-4">
+  <div class="flex items-start justify-between mb-3">
+    <div>
+      <h2 class="text-xl font-semibold">{{ result.title }}</h2>
+      <p class="text-xs text-slate-500">Namespace: {{ result.namespace }} &middot; Rows: {{ result.row_count }}</p>
+    </div>
+    <div class="flex gap-2">
+      <button onclick="downloadReport('csv')" class="text-sm border border-slate-300 px-3 py-1 rounded">Download CSV</button>
+      <button onclick="downloadReport('json')" class="text-sm border border-slate-300 px-3 py-1 rounded">Download JSON</button>
+    </div>
+  </div>
+
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm border border-slate-200">
+      <thead class="bg-slate-50 text-left">
+        <tr>
+          {% for c in result.columns %}<th class="px-3 py-2">{{ c }}</th>{% endfor %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in result.rows %}
+        <tr class="border-t border-slate-100">
+          {% for cell in row %}<td class="px-3 py-2">{{ cell if cell is not none else '' }}</td>{% endfor %}
+        </tr>
+        {% else %}
+        <tr><td class="px-3 py-3 text-slate-500" colspan="{{ result.columns|length }}">No matching rows.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <p class="text-xs text-slate-500 mt-3">Generated at {{ result.generated_at.isoformat() }}</p>
+</div>
+
+<script>
+window.downloadReport = async (fmt) => {
+  const body = {{ form.model_dump()|tojson }};
+  body.format = fmt;
+  const r = await fetch('/api/reports/generate', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify(body),
+  });
+  if (!r.ok) { alert('Download failed'); return; }
+  const blob = await r.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `{{ result.title }}.${fmt}`;
+  a.click();
+  URL.revokeObjectURL(url);
+};
+</script>
+{% endif %}
+{% endblock %}

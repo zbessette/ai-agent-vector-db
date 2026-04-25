@@ -201,4 +201,64 @@ def register(templates: Jinja2Templates) -> APIRouter:
             {"results": results, "query": req.query, "namespace": req.namespace},
         )
 
+    @router.get("/reports")
+    def reports_page(
+        request: Request,
+        namespace: str | None = None,
+        registry: NamespaceRegistry = Depends(get_registry),
+    ):
+        ns_obj = registry.get(namespace) if namespace else None
+        return templates.TemplateResponse(
+            request,
+            "report.html",
+            {
+                "namespaces": registry.list_all(),
+                "selected_namespace": namespace or "",
+                "ns_obj": ns_obj,
+                "result": None,
+                "form": None,
+            },
+        )
+
+    @router.post("/reports/generate")
+    async def reports_generate_html(
+        request: Request,
+        registry: NamespaceRegistry = Depends(get_registry),
+        storage=Depends(get_storage),
+    ):
+        from ..services.validation import ReportRequest
+        from ..services.reports import generate_report
+
+        form = await request.form()
+        try:
+            req = ReportRequest(
+                title=form.get("title", ""),
+                namespace=form.get("namespace", ""),
+                columns=form.getlist("columns"),
+                entry_type=form.get("entry_type") or None,
+                date_from=form.get("date_from") or None,
+                date_to=form.get("date_to") or None,
+                max_rows=int(form.get("max_rows") or 1000),
+                format=form.get("format", "html"),
+            )
+        except Exception as e:
+            raise AppError(f"Invalid report request: {e}", status_code=422)
+
+        if registry.get(req.namespace) is None:
+            raise AppError(f"Namespace '{req.namespace}' not found", status_code=404)
+
+        result = generate_report(storage, req)
+
+        return templates.TemplateResponse(
+            request,
+            "report.html",
+            {
+                "namespaces": registry.list_all(),
+                "selected_namespace": req.namespace,
+                "ns_obj": registry.get(req.namespace),
+                "result": result,
+                "form": req,
+            },
+        )
+
     return router
