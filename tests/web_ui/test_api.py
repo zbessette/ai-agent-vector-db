@@ -144,3 +144,25 @@ def test_list_entries_pagination_envelope(client, registry, mock_qdrant):
     assert "items" in body
     assert "count" in body
     assert "limit" in body
+
+
+def test_create_namespace_duplicate_returns_400(client, registry):
+    registry.create(name="alpha", description="d", embedding_instructions="$x", fields=[])
+    response = client.post(
+        "/api/namespaces",
+        json={
+            "name": "alpha",
+            "description": "d2",
+            "embedding_instructions": "$x",
+            "fields": [],
+        },
+    )
+    assert response.status_code == 400
+    assert "already exists" in response.json().get("error", "")
+
+
+def test_reindex_namespace_returns_501(client, registry):
+    registry.create(name="alpha", description="d", embedding_instructions="$x", fields=[])
+    registry.confirm("alpha")
+    response = client.post("/api/namespaces/alpha/reindex")
+    assert response.status_code == 501

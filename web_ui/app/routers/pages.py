@@ -2,14 +2,16 @@ import logging
 
 import httpx
 from fastapi import APIRouter, Depends, Request
+from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates
+from pydantic import ValidationError
 from qdrant_client.http.exceptions import UnexpectedResponse
 
 from mcp_server.namespaces import NamespaceRegistry
 from ..deps import get_qdrant, get_registry, get_storage, get_search
 from ..errors import AppError
 from ..services.search_helpers import filter_by_threshold
-from ..services.validation import SearchRequest
+from ..services.validation import NamespaceCreateRequest, SearchRequest
 
 logger = logging.getLogger(__name__)
 
@@ -99,10 +101,6 @@ def register(templates: Jinja2Templates) -> APIRouter:
         request: Request,
         registry: NamespaceRegistry = Depends(get_registry),
     ):
-        from fastapi.responses import RedirectResponse
-        from pydantic import ValidationError
-        from ..services.validation import NamespaceCreateRequest
-
         form = await request.form()
         try:
             req = NamespaceCreateRequest(
@@ -234,7 +232,6 @@ def register(templates: Jinja2Templates) -> APIRouter:
         search_mgr=Depends(get_search),
         registry: NamespaceRegistry = Depends(get_registry),
     ):
-        from pydantic import ValidationError
         try:
             req = SearchRequest(query=query, namespace=namespace, top_k=top_k, threshold=threshold)
         except ValidationError as e:
@@ -275,7 +272,6 @@ def register(templates: Jinja2Templates) -> APIRouter:
         registry: NamespaceRegistry = Depends(get_registry),
         storage=Depends(get_storage),
     ):
-        from pydantic import ValidationError
         from ..services.validation import ReportRequest
         from ..services.reports import generate_report
 
