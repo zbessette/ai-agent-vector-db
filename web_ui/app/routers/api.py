@@ -90,14 +90,14 @@ def register(templates: Jinja2Templates) -> APIRouter:
     def list_entries(
         name: str,
         limit: int = 20,
-        offset: int = 0,
         storage: StorageManager = Depends(get_storage),
         registry: NamespaceRegistry = Depends(get_registry),
     ):
         if registry.get(name) is None:
             raise AppError(f"Namespace '{name}' not found", status_code=404)
+        # Cursor pagination is a follow-up; v1 returns the first `limit` entries.
         items = storage.list_entries(namespace=name, limit=limit, offset=None)
-        return {"items": items, "total": len(items), "limit": limit, "offset": offset}
+        return {"items": items, "count": len(items), "limit": limit}
 
     @router.post("/namespaces/{name}/entries", status_code=201)
     def create_entry(
@@ -159,8 +159,6 @@ def register(templates: Jinja2Templates) -> APIRouter:
         search_mgr: SearchManager = Depends(get_search),
         registry: NamespaceRegistry = Depends(get_registry),
     ):
-        if not body.namespace:
-            raise AppError("namespace is required", status_code=400)
         if registry.get(body.namespace) is None:
             raise AppError(f"Namespace '{body.namespace}' not found", status_code=404)
         try:

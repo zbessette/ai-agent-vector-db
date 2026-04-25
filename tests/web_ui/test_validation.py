@@ -43,12 +43,17 @@ def test_namespace_create_accepts_valid_name():
 
 def test_search_request_caps_top_k():
     with pytest.raises(ValidationError):
-        SearchRequest(query="hi", top_k=10_000)
+        SearchRequest(query="hi", namespace="ns", top_k=10_000)
 
 
 def test_search_request_requires_query():
     with pytest.raises(ValidationError):
-        SearchRequest(query="", top_k=10)
+        SearchRequest(query="", namespace="ns", top_k=10)
+
+
+def test_search_request_requires_namespace():
+    with pytest.raises(ValidationError):
+        SearchRequest(query="hi", top_k=10)
 
 
 def test_report_request_requires_at_least_one_column():

@@ -57,7 +57,7 @@ class EntryUpdateRequest(EntryCreateRequest):
 
 class SearchRequest(BaseModel):
     query: str = Field(min_length=1, max_length=10_000)
-    namespace: Optional[str] = None
+    namespace: str = Field(min_length=1)
     top_k: int = Field(default=10, ge=1, le=100)
     threshold: Optional[float] = Field(default=None, ge=0.0, le=1.0)
     filters: dict[str, Any] = {}
