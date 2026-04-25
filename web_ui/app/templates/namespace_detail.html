@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}{{ ns.name }}{% endblock %}
+{% block content %}
+<div class="mb-4">
+  <a href="/namespaces" class="text-sm text-slate-500 hover:underline">&larr; All namespaces</a>
+  <h1 class="text-2xl font-semibold">{{ ns.name }}</h1>
+  <p class="text-sm text-slate-600">{{ ns.description }} &middot; status: {{ ns.status }}</p>
+</div>
+
+<div class="border-b border-slate-200 mb-4">
+  <nav class="flex gap-4 text-sm">
+    <a href="?tab=entries" class="py-2 {% if tab == 'entries' %}border-b-2 border-blue-600 text-blue-600{% else %}text-slate-600{% endif %}">Entries</a>
+    <a href="?tab=config" class="py-2 {% if tab == 'config' %}border-b-2 border-blue-600 text-blue-600{% else %}text-slate-600{% endif %}">Config</a>
+    <a href="?tab=stats" class="py-2 {% if tab == 'stats' %}border-b-2 border-blue-600 text-blue-600{% else %}text-slate-600{% endif %}">Stats</a>
+  </nav>
+</div>
+
+{% if tab == 'config' %}
+<div class="bg-white rounded-lg border border-slate-200 p-4 space-y-3 text-sm">
+  <div><span class="text-slate-500">Embedding instructions:</span><pre class="bg-slate-50 p-2 rounded mt-1">{{ ns.embedding_instructions }}</pre></div>
+  <div><span class="text-slate-500">Include context:</span> {{ ns.include_context }}</div>
+  <div>
+    <div class="text-slate-500 mb-1">Fields:</div>
+    <table class="w-full text-sm border border-slate-200">
+      <thead class="bg-slate-50 text-left">
+        <tr><th class="px-2 py-1">Name</th><th class="px-2 py-1">Type</th><th class="px-2 py-1">Required</th><th class="px-2 py-1">Filterable</th><th class="px-2 py-1">Description</th></tr>
+      </thead>
+      <tbody>
+        {% for f in ns.fields %}
+        <tr class="border-t border-slate-100">
+          <td class="px-2 py-1 font-mono">{{ f.field_name }}</td>
+          <td class="px-2 py-1">{{ f.field_type }}</td>
+          <td class="px-2 py-1">{{ f.required }}</td>
+          <td class="px-2 py-1">{{ f.filterable }}</td>
+          <td class="px-2 py-1 text-slate-600">{{ f.description }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% elif tab == 'stats' %}
+<div class="bg-white rounded-lg border border-slate-200 p-4 text-sm">
+  <div><span class="text-slate-500">Entry count:</span> {{ entry_count }}</div>
+  <div><span class="text-slate-500">Created:</span> {{ ns.created_at }}</div>
+  <div><span class="text-slate-500">Updated:</span> {{ ns.updated_at }}</div>
+</div>
+
+{% else %}
+<div hx-get="/namespaces/{{ ns.name }}/entries-partial?limit=20&offset=0" hx-trigger="load" hx-swap="innerHTML">
+  <div class="text-sm text-slate-500">Loading entries...</div>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,28 @@
+<div class="bg-white rounded-lg border border-slate-200 overflow-x-auto">
+  <table class="w-full text-sm">
+    <thead class="bg-slate-50 text-left">
+      <tr>
+        <th class="px-4 py-2">ID</th>
+        <th class="px-4 py-2">Type</th>
+        <th class="px-4 py-2">Text</th>
+        <th class="px-4 py-2">Created</th>
+        <th class="px-4 py-2"></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for e in entries %}
+      <tr class="border-t border-slate-100" id="entry-{{ e.id }}">
+        <td class="px-4 py-2 font-mono text-xs">{{ e.id }}</td>
+        <td class="px-4 py-2">{{ e.payload.entry_type }}</td>
+        <td class="px-4 py-2">{{ (e.payload.original_text or '')[:120] }}{% if (e.payload.original_text or '')|length > 120 %}…{% endif %}</td>
+        <td class="px-4 py-2 text-xs text-slate-500">{{ e.payload.created_at }}</td>
+        <td class="px-4 py-2 text-right">
+          {# Edit/Delete actions added in Task 6 #}
+        </td>
+      </tr>
+      {% else %}
+      <tr><td class="px-4 py-3 text-slate-500" colspan="5">No entries yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
