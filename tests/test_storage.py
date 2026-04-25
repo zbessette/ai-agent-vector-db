@@ -131,3 +131,82 @@ def test_list_entries(storage, mock_qdrant):
     results = storage.list_entries(namespace="test-ns", limit=10)
     assert len(results) == 1
     assert results[0]["id"] == "uuid-1"
+
+
+def test_update_entry_re_embeds_and_overwrites(storage, mock_qdrant, mock_embedder):
+    fake_existing = MagicMock()
+    fake_existing.id = "uuid-1"
+    fake_existing.payload = {
+        "category": "old",
+        "original_text": "old text",
+        "embedded_text": "old text",
+        "entry_type": "note",
+        "created_at": "2026-01-01T00:00:00+00:00",
+        "updated_at": "2026-01-01T00:00:00+00:00",
+    }
+    mock_qdrant.retrieve.return_value = [fake_existing]
+    mock_embedder.embed.reset_mock()
+    mock_qdrant.upsert.reset_mock()
+
+    storage.update(
+        namespace="test-ns",
+        entry_id="uuid-1",
+        original_text="new text",
+        entry_type="note",
+        payload={"category": "new"},
+    )
+
+    # Re-embedded
+    mock_embedder.embed.assert_called_once_with("new text")
+
+    # Upserted with same id, preserved created_at, fresh updated_at
+    upsert_call = mock_qdrant.upsert.call_args
+    points = upsert_call[1]["points"]
+    assert len(points) == 1
+    p = points[0]
+    assert p.id == "uuid-1"
+    assert p.payload["original_text"] == "new text"
+    assert p.payload["category"] == "new"
+    assert p.payload["created_at"] == "2026-01-01T00:00:00+00:00"
+    assert p.payload["updated_at"] != "2026-01-01T00:00:00+00:00"
+
+
+def test_update_entry_validates_payload(storage, mock_qdrant):
+    fake_existing = MagicMock()
+    fake_existing.id = "uuid-1"
+    fake_existing.payload = {"category": "old", "created_at": "x", "updated_at": "x"}
+    mock_qdrant.retrieve.return_value = [fake_existing]
+
+    with pytest.raises(ValueError, match="category"):
+        storage.update(
+            namespace="test-ns",
+            entry_id="uuid-1",
+            original_text="x",
+            entry_type="note",
+            payload={},  # missing required category
+        )
+
+
+def test_update_entry_raises_when_missing(storage, mock_qdrant):
+    mock_qdrant.retrieve.return_value = []
+    with pytest.raises(ValueError, match="not found"):
+        storage.update(
+            namespace="test-ns",
+            entry_id="missing",
+            original_text="x",
+            entry_type="note",
+            payload={"category": "x"},
+        )
+
+
+def test_update_entry_rejects_inactive_namespace(registry, mock_qdrant, mock_embedder):
+    registry.create(name="proposed-ns", description="", embedding_instructions="$original_text", fields=[])
+    storage = StorageManager(registry, mock_qdrant, mock_embedder)
+    with pytest.raises(ValueError, match="not active"):
+        storage.update(
+            namespace="proposed-ns",
+            entry_id="uuid-1",
+            original_text="x",
+            entry_type="note",
+            payload={},
+        )

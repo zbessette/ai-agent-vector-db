@@ -62,6 +62,60 @@ class StorageManager:
 
         return entry_id
 
+    def update(
+        self,
+        namespace: str,
+        entry_id: str,
+        original_text: str,
+        entry_type: str,
+        payload: dict,
+    ) -> str:
+        ns = self.registry.get(namespace)
+        if ns is None:
+            raise ValueError(f"Namespace '{namespace}' not found")
+        if ns["status"] != "active":
+            raise ValueError(f"Namespace '{namespace}' is not active (status: {ns['status']})")
+
+        errors = validate_payload(payload, ns["fields"])
+        if errors:
+            raise ValueError(f"Payload validation failed: {'; '.join(errors)}")
+
+        existing = self.qdrant.retrieve(
+            collection_name=ns["qdrant_collection"],
+            ids=[entry_id],
+            with_payload=True,
+        )
+        if not existing:
+            raise ValueError(f"Entry '{entry_id}' not found in namespace '{namespace}'")
+
+        existing_payload = existing[0].payload or {}
+        created_at = existing_payload.get("created_at") or datetime.now(timezone.utc).isoformat()
+
+        all_fields = {**payload, "original_text": original_text}
+        embedded_text = apply_embedding_template(ns["embedding_instructions"], all_fields)
+        vector = self.embedder.embed(embedded_text)
+
+        now = datetime.now(timezone.utc).isoformat()
+
+        full_payload = {
+            **payload,
+            "original_text": original_text,
+            "embedded_text": embedded_text,
+            "entry_type": entry_type,
+            "source_id": payload.get("source_id"),
+            "source_url": payload.get("source_url"),
+            "tags": payload.get("tags", []),
+            "created_at": created_at,
+            "updated_at": now,
+        }
+
+        self.qdrant.upsert(
+            collection_name=ns["qdrant_collection"],
+            points=[PointStruct(id=entry_id, vector=vector, payload=full_payload)],
+        )
+
+        return entry_id
+
     def delete(self, namespace: str, entry_id: str):
         ns = self.registry.get(namespace)
         if ns is None:
