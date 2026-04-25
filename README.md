@@ -59,6 +59,25 @@ After running, restart Claude Desktop (Cmd+Q, reopen).
 
 </details>
 
+## Web UI
+
+A local web interface at `http://localhost:11489` (configurable via `WEB_UI_PORT`) for browsing namespaces, managing entries, running searches, and generating ad-hoc reports.
+
+**Features:**
+- **Dashboard** — namespace and entry counts at a glance
+- **Namespaces** — create, view config, activate proposed namespaces, edit description/embedding instructions, delete
+- **Entries** — paginated table per namespace; add, edit, delete entries with schema-driven forms
+- **Search** — semantic search per namespace with score threshold and live HTMX results
+- **Reports** — pick columns, date range, and entry-type filter; titled output with timestamp; CSV / JSON download
+
+**Architecture notes:**
+- Runs as the `web-ui` Docker service alongside `mcp-server`, sharing the SQLite namespace registry and Qdrant + Ollama backends
+- Reuses the same Python service classes as the MCP server — no duplicate logic
+- JSON `/api/*` endpoints mirror every page action so the UI is ready for future external clients or an SPA frontend
+- Reindex from the web UI is a v1 placeholder (returns 501); use the MCP server's `reindex_namespace` tool from Claude
+
+The web UI is additive — it does not affect the MCP server's behavior or replace its tool interface.
+
 ## What It Does
 
 Claude gets persistent, searchable knowledge across conversations via these tools:
