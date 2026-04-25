@@ -1,5 +1,8 @@
 """JSON /api/* routes — mirror of the HTML pages, ready for external clients."""
+import logging
 import re
+
+logger = logging.getLogger(__name__)
 
 from fastapi import APIRouter, Depends, Response
 from fastapi.templating import Jinja2Templates
@@ -92,7 +95,13 @@ def register(templates: Jinja2Templates) -> APIRouter:
             ns = registry.confirm(name)
         except ValueError as e:
             raise AppError(str(e), status_code=400)
-        ensure_namespace_collection(qdrant, ns, EMBEDDING_DIMENSIONS)
+        created = ensure_namespace_collection(qdrant, ns, EMBEDDING_DIMENSIONS)
+        if not created:
+            logger.warning(
+                "Activated namespace '%s' but its Qdrant collection already existed; "
+                "indexes were not (re)created.",
+                ns["name"],
+            )
         return ns
 
     @router.delete("/namespaces/{name}", status_code=204)

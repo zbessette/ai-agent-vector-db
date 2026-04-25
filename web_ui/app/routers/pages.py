@@ -136,11 +136,14 @@ def register(templates: Jinja2Templates) -> APIRouter:
         if ns is None:
             raise AppError(f"Namespace '{name}' not found", status_code=404)
 
-        try:
-            count_result = qdrant.count(collection_name=ns["name"], exact=True)
-            entry_count = count_result.count
-        except (UnexpectedResponse, httpx.HTTPError, ConnectionError) as exc:
-            logger.warning("count failed for namespace '%s': %s", ns["name"], exc)
+        if ns["status"] == "active":
+            try:
+                count_result = qdrant.count(collection_name=ns["name"], exact=True)
+                entry_count = count_result.count
+            except (UnexpectedResponse, httpx.HTTPError, ConnectionError) as exc:
+                logger.warning("count failed for namespace '%s': %s", ns["name"], exc)
+                entry_count = 0
+        else:
             entry_count = 0
 
         return templates.TemplateResponse(
