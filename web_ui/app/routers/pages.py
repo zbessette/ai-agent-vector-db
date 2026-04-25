@@ -6,7 +6,7 @@ from fastapi.templating import Jinja2Templates
 from qdrant_client.http.exceptions import UnexpectedResponse
 
 from mcp_server.namespaces import NamespaceRegistry
-from ..deps import get_qdrant, get_registry, get_storage
+from ..deps import get_qdrant, get_registry, get_storage, get_search
 from ..errors import AppError
 
 logger = logging.getLogger(__name__)
@@ -156,6 +156,44 @@ def register(templates: Jinja2Templates) -> APIRouter:
             request,
             "partials/entry_form.html",
             {"ns": ns, "entry": entry, "errors": {}},
+        )
+
+    @router.get("/search")
+    def search_page(
+        request: Request,
+        namespace: str | None = None,
+        registry: NamespaceRegistry = Depends(get_registry),
+    ):
+        return templates.TemplateResponse(
+            request,
+            "search.html",
+            {
+                "namespaces": registry.list_all(),
+                "selected_namespace": namespace or "",
+            },
+        )
+
+    @router.get("/search/results")
+    def search_results(
+        request: Request,
+        query: str,
+        namespace: str,
+        top_k: int = 10,
+        threshold: float | None = None,
+        search_mgr=Depends(get_search),
+        registry: NamespaceRegistry = Depends(get_registry),
+    ):
+        if not query.strip():
+            raise AppError("Query is required", status_code=400)
+        if registry.get(namespace) is None:
+            raise AppError(f"Namespace '{namespace}' not found", status_code=404)
+        results = search_mgr.search(namespace=namespace, query=query, limit=top_k)
+        if threshold is not None:
+            results = [r for r in results if r["score"] >= threshold]
+        return templates.TemplateResponse(
+            request,
+            "partials/search_results.html",
+            {"results": results, "query": query, "namespace": namespace},
         )
 
     return router

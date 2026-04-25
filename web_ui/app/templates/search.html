@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Search{% endblock %}
+{% block content %}
+<h1 class="text-2xl font-semibold mb-4">Search</h1>
+
+<form
+  hx-get="/search/results"
+  hx-target="#search-results"
+  hx-swap="innerHTML"
+  hx-trigger="submit, keyup changed delay:400ms from:input[name=query]"
+  class="bg-white rounded-lg border border-slate-200 p-4 mb-4 grid grid-cols-1 md:grid-cols-4 gap-3 text-sm">
+
+  <div class="md:col-span-2">
+    <label class="block text-slate-600 mb-1">Query</label>
+    <input name="query" required maxlength="10000" class="w-full border border-slate-300 rounded px-2 py-1">
+  </div>
+  <div>
+    <label class="block text-slate-600 mb-1">Namespace</label>
+    <select name="namespace" required class="w-full border border-slate-300 rounded px-2 py-1">
+      {% for n in namespaces %}
+      <option value="{{ n.name }}" {% if n.name == selected_namespace %}selected{% endif %}>{{ n.name }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div>
+    <label class="block text-slate-600 mb-1">Top K</label>
+    <input name="top_k" type="number" min="1" max="100" value="10" class="w-full border border-slate-300 rounded px-2 py-1">
+  </div>
+  <div>
+    <label class="block text-slate-600 mb-1">Min score (0–1)</label>
+    <input name="threshold" type="number" min="0" max="1" step="0.01" class="w-full border border-slate-300 rounded px-2 py-1">
+  </div>
+  <div class="md:col-span-4">
+    <button class="bg-blue-600 text-white px-3 py-1.5 rounded">Search</button>
+  </div>
+</form>
+
+<div id="search-results"></div>
+{% endblock %}

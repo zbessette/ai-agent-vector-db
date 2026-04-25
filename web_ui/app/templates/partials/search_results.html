@@ -1,0 +1,35 @@
+<div class="bg-white rounded-lg border border-slate-200 overflow-x-auto">
+  <table class="w-full text-sm">
+    <thead class="bg-slate-50 text-left">
+      <tr>
+        <th class="px-4 py-2">#</th>
+        <th class="px-4 py-2">Score</th>
+        <th class="px-4 py-2">ID</th>
+        <th class="px-4 py-2">Source</th>
+        <th class="px-4 py-2">Type</th>
+        <th class="px-4 py-2">Text</th>
+        <th class="px-4 py-2">Created</th>
+        <th class="px-4 py-2"></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in results %}
+      <tr class="border-t border-slate-100">
+        <td class="px-4 py-2">{{ loop.index }}</td>
+        <td class="px-4 py-2 font-mono">{{ "%.3f"|format(r.score) }}</td>
+        <td class="px-4 py-2 font-mono text-xs text-slate-500">{{ r.id }}</td>
+        <td class="px-4 py-2">{{ r.source }}</td>
+        <td class="px-4 py-2">{{ r.payload.entry_type }}</td>
+        <td class="px-4 py-2">{% set text = r.payload.original_text or '' %}{{ text[:160] }}{% if text|length > 160 %}…{% endif %}</td>
+        <td class="px-4 py-2 text-xs text-slate-500">{{ r.payload.created_at }}</td>
+        <td class="px-4 py-2 text-right">
+          <a class="text-blue-600 hover:underline" href="/namespaces/{{ r.source }}">Open</a>
+        </td>
+      </tr>
+      {% else %}
+      <tr><td class="px-4 py-3 text-slate-500" colspan="8">No results.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+<p class="text-xs text-slate-500 mt-2">{{ results|length }} result(s) for "{{ query }}" in {{ namespace }}.</p>

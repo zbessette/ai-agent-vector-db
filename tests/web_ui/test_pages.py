@@ -97,3 +97,31 @@ def test_entries_partial_returns_rows(client, registry, mock_qdrant):
     assert response.status_code == 200
     assert "uuid-1" in response.text
     assert "Hello world" in response.text
+
+
+def test_search_page_renders(client, registry):
+    registry.create(name="alpha", description="d", embedding_instructions="$original_text", fields=[])
+    registry.confirm("alpha")
+    response = client.get("/search")
+    assert response.status_code == 200
+    assert "Search" in response.text
+    assert "alpha" in response.text  # namespace selector option
+
+
+def test_search_results_partial(client, registry, mock_qdrant):
+    from unittest.mock import MagicMock
+    registry.create(name="alpha", description="d", embedding_instructions="$original_text", fields=[])
+    registry.confirm("alpha")
+
+    fake_point = MagicMock()
+    fake_point.id = "uuid-1"
+    fake_point.score = 0.92
+    fake_point.payload = {"original_text": "match", "entry_type": "note", "created_at": "2026-04-24T00:00:00+00:00"}
+    points_result = MagicMock()
+    points_result.points = [fake_point]
+    mock_qdrant.query_points.return_value = points_result
+
+    response = client.get("/search/results?query=hello&namespace=alpha&top_k=5")
+    assert response.status_code == 200
+    assert "uuid-1" in response.text
+    assert "0.92" in response.text or "0.9" in response.text
