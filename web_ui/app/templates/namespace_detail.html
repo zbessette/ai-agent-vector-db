@@ -69,6 +69,13 @@
 </div>
 
 {% else %}
+{% if ns.status != 'active' %}
+<div class="bg-amber-50 border border-amber-200 rounded-lg p-4 text-sm text-amber-900">
+  <p class="font-medium mb-1">This namespace is <span class="font-mono">{{ ns.status }}</span>.</p>
+  <p class="mb-3">Activate it from the Config tab to start adding entries.</p>
+  <a href="?tab=config" class="bg-amber-600 text-white px-3 py-1.5 rounded text-sm hover:bg-amber-700">Go to Config</a>
+</div>
+{% else %}
 <div x-data="{ openNew: false, editingId: null, editingHtml: '' }">
   <div class="flex justify-end mb-3">
     <button @click="openNew = true" class="bg-blue-600 text-white text-sm px-3 py-1.5 rounded">Add entry</button>
@@ -90,7 +97,7 @@
     <div x-html="editingHtml"></div>
   </dialog>
 </div>
-
+{% endif %}
 
 {% endif %}
 {% endblock %}

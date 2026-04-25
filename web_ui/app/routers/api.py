@@ -129,8 +129,11 @@ def register(templates: Jinja2Templates) -> APIRouter:
         storage: StorageManager = Depends(get_storage),
         registry: NamespaceRegistry = Depends(get_registry),
     ):
-        if registry.get(name) is None:
+        ns = registry.get(name)
+        if ns is None:
             raise AppError(f"Namespace '{name}' not found", status_code=404)
+        if ns["status"] != "active":
+            return {"items": [], "count": 0, "limit": limit, "status": ns["status"]}
         # Cursor pagination is a follow-up; v1 returns the first `limit` entries.
         items = storage.list_entries(namespace=name, limit=limit, offset=None)
         return {"items": items, "count": len(items), "limit": limit}

@@ -277,3 +277,30 @@ def test_reports_api_sanitizes_csv_filename(client, registry, mock_qdrant):
     # The header has exactly the expected attachment shape
     assert cd.startswith('attachment; filename="')
     assert cd.endswith('.csv"')
+
+
+def test_namespace_detail_proposed_shows_activation_cta(client, registry):
+    # Proposed (not confirmed) namespace.
+    registry.create(
+        name="alpha",
+        description="d",
+        embedding_instructions="$original_text",
+        fields=[],
+    )
+    response = client.get("/namespaces/alpha")
+    assert response.status_code == 200
+    assert "Activate it from the Config tab" in response.text
+    # Should NOT fire an entries fetch.
+    assert "Loading entries" not in response.text
+
+
+def test_entries_partial_returns_empty_for_proposed_namespace(client, registry):
+    registry.create(
+        name="alpha",
+        description="d",
+        embedding_instructions="$original_text",
+        fields=[],
+    )
+    response = client.get("/namespaces/alpha/entries-partial?limit=10")
+    assert response.status_code == 200
+    assert "No entries yet" in response.text

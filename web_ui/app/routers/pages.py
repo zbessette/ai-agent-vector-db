@@ -164,6 +164,14 @@ def register(templates: Jinja2Templates) -> APIRouter:
         ns = registry.get(name)
         if ns is None:
             raise AppError(f"Namespace '{name}' not found", status_code=404)
+        if ns["status"] != "active":
+            # Render the partial with no entries; the parent template should already
+            # show the "needs activation" callout instead, but defend in depth here.
+            return templates.TemplateResponse(
+                request,
+                "partials/entries_table.html",
+                {"ns": ns, "entries": [], "limit": limit},
+            )
         # Cursor pagination is a follow-up; v1 returns the first `limit` entries.
         entries = storage.list_entries(namespace=name, limit=limit, offset=None)
         return templates.TemplateResponse(

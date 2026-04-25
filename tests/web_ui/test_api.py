@@ -207,3 +207,12 @@ def test_create_namespace_with_no_fields_gets_default_text(client):
     body = response.json()
     assert len(body["fields"]) == 1
     assert body["fields"][0]["field_name"] == "text"
+
+
+def test_list_entries_returns_empty_for_proposed_namespace(client, registry):
+    registry.create(name="alpha", description="d", embedding_instructions="$x", fields=[])
+    # Note: status is 'proposed' (no .confirm() call).
+    response = client.get("/api/namespaces/alpha/entries?limit=5")
+    assert response.status_code == 200
+    body = response.json()
+    assert body == {"items": [], "count": 0, "limit": 5, "status": "proposed"}
