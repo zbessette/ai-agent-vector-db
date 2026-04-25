@@ -304,3 +304,29 @@ def test_entries_partial_returns_empty_for_proposed_namespace(client, registry):
     response = client.get("/namespaces/alpha/entries-partial?limit=10")
     assert response.status_code == 200
     assert "No entries yet" in response.text
+
+
+def test_search_results_accepts_empty_threshold(client, registry, mock_qdrant):
+    from unittest.mock import MagicMock
+    registry.create(name="alpha", description="d", embedding_instructions="$original_text", fields=[])
+    registry.confirm("alpha")
+
+    fake_point = MagicMock()
+    fake_point.id = "uuid-1"
+    fake_point.score = 0.5
+    fake_point.payload = {"original_text": "hi", "entry_type": "note", "created_at": "2026-04-25T00:00:00+00:00"}
+    points_result = MagicMock()
+    points_result.points = [fake_point]
+    mock_qdrant.query_points.return_value = points_result
+
+    # threshold= (empty string) should be treated as None, not as a coercion error.
+    response = client.get("/search/results?query=hello&namespace=alpha&top_k=5&threshold=")
+    assert response.status_code == 200
+    assert "uuid-1" in response.text
+
+
+def test_search_results_rejects_non_numeric_threshold(client, registry):
+    registry.create(name="alpha", description="d", embedding_instructions="$original_text", fields=[])
+    registry.confirm("alpha")
+    response = client.get("/search/results?query=hi&namespace=alpha&top_k=5&threshold=abc")
+    assert response.status_code == 400

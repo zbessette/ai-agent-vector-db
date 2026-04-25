@@ -83,6 +83,7 @@ def register(templates: Jinja2Templates) -> APIRouter:
     def namespace_new_form(
         request: Request,
         registry: NamespaceRegistry = Depends(get_registry),
+        qdrant=Depends(get_qdrant),
     ):
         existing = registry.list_all()
         return templates.TemplateResponse(
@@ -90,7 +91,7 @@ def register(templates: Jinja2Templates) -> APIRouter:
             "namespaces_list.html",
             {
                 "namespaces": existing,
-                "counts": {n["name"]: 0 for n in existing},
+                "counts": _namespace_counts(qdrant, existing),
                 "status_filter": "",
                 "show_form": True,
             },
@@ -239,15 +240,17 @@ def register(templates: Jinja2Templates) -> APIRouter:
         query: str,
         namespace: str,
         top_k: int = 10,
-        threshold: float | None = None,
+        threshold: str | None = None,
         search_mgr=Depends(get_search),
         registry: NamespaceRegistry = Depends(get_registry),
     ):
         try:
-            req = SearchRequest(query=query, namespace=namespace, top_k=top_k, threshold=threshold)
-        except ValidationError as e:
+            threshold_val = float(threshold) if threshold else None
+            req = SearchRequest(query=query, namespace=namespace, top_k=top_k, threshold=threshold_val)
+        except (ValidationError, ValueError) as e:
             # Return 400 (not 422) since this is an HTML route, not the JSON API.
-            raise AppError(f"Invalid search request: {e.errors()[0]['msg']}", status_code=400)
+            msg = e.errors()[0]['msg'] if isinstance(e, ValidationError) else str(e)
+            raise AppError(f"Invalid search request: {msg}", status_code=400)
         if registry.get(req.namespace) is None:
             raise AppError(f"Namespace '{req.namespace}' not found", status_code=404)
         results = search_mgr.search(namespace=req.namespace, query=req.query, limit=req.top_k)
