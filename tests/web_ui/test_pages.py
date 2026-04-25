@@ -88,10 +88,7 @@ def test_entries_partial_returns_rows(client, registry, mock_qdrant):
         "entry_type": "note",
         "created_at": "2026-04-24T12:00:00+00:00",
     }
-    scroll_result = MagicMock()
-    scroll_result.points = [fake_point]
-    scroll_result.next_page_offset = None
-    mock_qdrant.scroll.return_value = scroll_result
+    mock_qdrant.scroll.return_value = ([fake_point], None)
 
     response = client.get("/namespaces/alpha/entries-partial?limit=10")
     assert response.status_code == 200
@@ -188,9 +185,7 @@ def test_reports_generate_html(client, registry, mock_qdrant):
         "category": "a",
         "created_at": "2026-04-15T00:00:00+00:00",
     }
-    scroll_result = MagicMock()
-    scroll_result.points = [fake_point]
-    mock_qdrant.scroll.return_value = scroll_result
+    mock_qdrant.scroll.return_value = ([fake_point], None)
 
     response = client.post(
         "/reports/generate",
@@ -216,9 +211,7 @@ def test_reports_api_csv_download(client, registry, mock_qdrant):
     fake_point = MagicMock()
     fake_point.id = "u1"
     fake_point.payload = {"original_text": "hi", "entry_type": "note", "created_at": "2026-04-15T00:00:00+00:00"}
-    scroll_result = MagicMock()
-    scroll_result.points = [fake_point]
-    mock_qdrant.scroll.return_value = scroll_result
+    mock_qdrant.scroll.return_value = ([fake_point], None)
 
     response = client.post(
         "/api/reports/generate",
@@ -264,9 +257,7 @@ def test_reports_api_sanitizes_csv_filename(client, registry, mock_qdrant):
     fake_point = MagicMock()
     fake_point.id = "u1"
     fake_point.payload = {"original_text": "x", "entry_type": "note", "created_at": "2026-04-15T00:00:00+00:00"}
-    scroll_result = MagicMock()
-    scroll_result.points = [fake_point]
-    mock_qdrant.scroll.return_value = scroll_result
+    mock_qdrant.scroll.return_value = ([fake_point], None)
 
     response = client.post(
         "/api/reports/generate",

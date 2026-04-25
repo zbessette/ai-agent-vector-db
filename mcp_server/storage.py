@@ -150,7 +150,9 @@ class StorageManager:
         if ns is None:
             raise ValueError(f"Namespace '{namespace}' not found")
 
-        result = self.qdrant.scroll(
+        # qdrant_client.scroll() returns Tuple[List[Record], Optional[PointId]] —
+        # the records list and the next-page offset cursor.
+        points, _next_offset = self.qdrant.scroll(
             collection_name=ns["qdrant_collection"],
             limit=limit,
             offset=offset,
@@ -158,4 +160,4 @@ class StorageManager:
             with_payload=True,
         )
 
-        return [{"id": p.id, "payload": p.payload} for p in result.points]
+        return [{"id": p.id, "payload": p.payload} for p in points]

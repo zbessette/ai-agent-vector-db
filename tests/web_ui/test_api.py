@@ -134,9 +134,7 @@ def test_list_entries_pagination_envelope(client, registry, mock_qdrant):
     fake_point = MagicMock()
     fake_point.id = "u1"
     fake_point.payload = {"original_text": "x", "entry_type": "note", "created_at": "2026-04-24T00:00:00+00:00"}
-    scroll_result = MagicMock()
-    scroll_result.points = [fake_point]
-    mock_qdrant.scroll.return_value = scroll_result
+    mock_qdrant.scroll.return_value = ([fake_point], None)
 
     response = client.get("/api/namespaces/alpha/entries?limit=5")
     assert response.status_code == 200

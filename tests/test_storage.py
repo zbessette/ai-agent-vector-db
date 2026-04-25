@@ -123,14 +123,19 @@ def test_list_entries(storage, mock_qdrant):
     fake_point = MagicMock()
     fake_point.id = "uuid-1"
     fake_point.payload = {"original_text": "Hello", "entry_type": "note"}
-    mock_result = MagicMock()
-    mock_result.points = [fake_point]
-    mock_result.next_page_offset = None
-    mock_qdrant.scroll.return_value = mock_result
+    # qdrant_client.scroll() returns (records, next_page_offset)
+    mock_qdrant.scroll.return_value = ([fake_point], None)
 
     results = storage.list_entries(namespace="test-ns", limit=10)
     assert len(results) == 1
     assert results[0]["id"] == "uuid-1"
+
+
+def test_list_entries_handles_empty_result(storage, mock_qdrant):
+    """Regression test: scroll() returns a tuple, not an object with .points."""
+    mock_qdrant.scroll.return_value = ([], None)
+    results = storage.list_entries(namespace="test-ns", limit=10)
+    assert results == []
 
 
 def test_update_entry_re_embeds_and_overwrites(storage, mock_qdrant, mock_embedder):

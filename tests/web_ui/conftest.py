@@ -29,11 +29,9 @@ def mock_qdrant():
     count_result.count = 0
     q.count.return_value = count_result
 
-    # Default scroll: empty
-    scroll_result = MagicMock()
-    scroll_result.points = []
-    scroll_result.next_page_offset = None
-    q.scroll.return_value = scroll_result
+    # Default scroll: empty.
+    # qdrant_client.scroll() returns Tuple[List[Record], Optional[PointId]].
+    q.scroll.return_value = ([], None)
 
     return q
 
