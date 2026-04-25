@@ -42,4 +42,28 @@
     </tbody>
   </table>
 </div>
+{% if show_form %}
+<dialog open class="rounded-lg border border-slate-200 p-4 max-w-lg w-full bg-white mt-6">
+  <h2 class="text-lg font-semibold mb-3">New namespace</h2>
+  <form method="post" action="/namespaces/new" class="space-y-3 text-sm">
+    <div>
+      <label class="block text-slate-600 mb-1">Name <span class="text-red-500">*</span></label>
+      <input name="name" required pattern="[a-zA-Z0-9][a-zA-Z0-9_-]{0,63}" class="w-full border border-slate-300 rounded px-2 py-1">
+    </div>
+    <div>
+      <label class="block text-slate-600 mb-1">Description</label>
+      <input name="description" maxlength="2000" class="w-full border border-slate-300 rounded px-2 py-1">
+    </div>
+    <div>
+      <label class="block text-slate-600 mb-1">Embedding instructions <span class="text-red-500">*</span></label>
+      <textarea name="embedding_instructions" required maxlength="4000" rows="3" class="w-full border border-slate-300 rounded px-2 py-1">$original_text</textarea>
+    </div>
+    <label class="inline-flex items-center gap-2"><input type="checkbox" name="include_context" checked> Include context</label>
+    <div class="flex gap-2 pt-2">
+      <button class="bg-blue-600 text-white px-3 py-1.5 rounded">Create</button>
+      <a href="/namespaces" class="px-3 py-1.5 rounded border border-slate-300">Cancel</a>
+    </div>
+  </form>
+</dialog>
+{% endif %}
 {% endblock %}

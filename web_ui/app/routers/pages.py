@@ -77,6 +77,55 @@ def register(templates: Jinja2Templates) -> APIRouter:
             },
         )
 
+    @router.get("/namespaces/new")
+    def namespace_new_form(
+        request: Request,
+        registry: NamespaceRegistry = Depends(get_registry),
+    ):
+        existing = registry.list_all()
+        return templates.TemplateResponse(
+            request,
+            "namespaces_list.html",
+            {
+                "namespaces": existing,
+                "counts": {n["name"]: 0 for n in existing},
+                "status_filter": "",
+                "show_form": True,
+            },
+        )
+
+    @router.post("/namespaces/new")
+    async def namespace_create_submit(
+        request: Request,
+        registry: NamespaceRegistry = Depends(get_registry),
+    ):
+        from fastapi.responses import RedirectResponse
+        from pydantic import ValidationError
+        from ..services.validation import NamespaceCreateRequest
+
+        form = await request.form()
+        try:
+            req = NamespaceCreateRequest(
+                name=form.get("name", ""),
+                description=form.get("description", ""),
+                embedding_instructions=form.get("embedding_instructions", ""),
+                include_context=form.get("include_context") == "on",
+                fields=[],
+            )
+        except (ValidationError, ValueError) as e:
+            raise AppError(f"Invalid namespace: {e}", status_code=422)
+        try:
+            registry.create(
+                name=req.name,
+                description=req.description,
+                embedding_instructions=req.embedding_instructions,
+                include_context=req.include_context,
+                fields=[f.model_dump() for f in req.fields],
+            )
+        except ValueError as e:
+            raise AppError(str(e), status_code=400)
+        return RedirectResponse(url=f"/namespaces/{req.name}", status_code=303)
+
     @router.get("/namespaces/{name}")
     def namespace_detail(
         request: Request,

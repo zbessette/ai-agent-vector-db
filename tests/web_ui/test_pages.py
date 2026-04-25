@@ -236,6 +236,26 @@ def test_reports_api_csv_download(client, registry, mock_qdrant):
     assert "u1" in response.text
 
 
+def test_namespace_new_form(client):
+    response = client.get("/namespaces/new")
+    assert response.status_code == 200
+    assert "New namespace" in response.text
+
+
+def test_namespace_create_submit(client):
+    response = client.post(
+        "/namespaces/new",
+        data={
+            "name": "alpha",
+            "description": "d",
+            "embedding_instructions": "$original_text",
+        },
+        follow_redirects=False,
+    )
+    assert response.status_code == 303
+    assert response.headers["location"].endswith("/namespaces/alpha")
+
+
 def test_reports_api_sanitizes_csv_filename(client, registry, mock_qdrant):
     from unittest.mock import MagicMock
     registry.create(name="alpha", description="d", embedding_instructions="$original_text", fields=[])

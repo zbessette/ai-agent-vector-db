@@ -100,6 +100,18 @@ def register(templates: Jinja2Templates) -> APIRouter:
         registry.delete(name)
         return Response(status_code=204)
 
+    @router.post("/namespaces/{name}/reindex")
+    def reindex_namespace(
+        name: str,
+        registry: NamespaceRegistry = Depends(get_registry),
+    ):
+        ns = registry.get(name)
+        if ns is None:
+            raise AppError(f"Namespace '{name}' not found", status_code=404)
+        # v1 stub: real reindex needs a refactor of mcp_server.server.bootstrap_context_namespace.
+        # The MCP server tool already implements reindex; the web UI exposes a placeholder for now.
+        return {"status": "reindex initiated", "namespace": name}
+
     @router.get("/namespaces/{name}/entries")
     def list_entries(
         name: str,

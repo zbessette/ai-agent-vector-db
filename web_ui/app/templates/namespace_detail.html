@@ -40,6 +40,42 @@
   </div>
 </div>
 
+<div class="mt-4 flex flex-wrap gap-2">
+  {% if ns.status == 'proposed' %}
+  <button class="bg-green-600 text-white px-3 py-1.5 rounded text-sm"
+          onclick="if(confirm('Activate namespace {{ ns.name }}?'))
+                   fetch('/api/namespaces/{{ ns.name }}/confirm', {method:'POST'})
+                     .then(r=> r.ok ? location.reload() : alert('Activate failed'))">
+    Activate
+  </button>
+  {% endif %}
+  <button class="bg-slate-200 px-3 py-1.5 rounded text-sm"
+          onclick="if(confirm('Reindex all entries?'))
+                   fetch('/api/namespaces/{{ ns.name }}/reindex', {method:'POST'})
+                     .then(r=> r.ok ? location.reload() : alert('Reindex failed'))">
+    Reindex
+  </button>
+  <button class="bg-red-600 text-white px-3 py-1.5 rounded text-sm"
+          onclick="if(confirm('Delete namespace {{ ns.name }}? This cannot be undone.'))
+                   fetch('/api/namespaces/{{ ns.name }}', {method:'DELETE'})
+                     .then(r=> r.ok ? (location.href='/namespaces') : alert('Delete failed'))">
+    Delete namespace
+  </button>
+</div>
+
+<div class="mt-6">
+  <h3 class="text-sm font-semibold mb-2">Edit description / instructions</h3>
+  <form class="space-y-2 text-sm" onsubmit="event.preventDefault();
+    fetch('/api/namespaces/{{ ns.name }}', {
+      method:'PATCH', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(Object.fromEntries(new FormData(event.target)))
+    }).then(r=> r.ok ? location.reload() : alert('Update failed'))">
+    <textarea name="description" rows="2" class="w-full border border-slate-300 rounded px-2 py-1">{{ ns.description }}</textarea>
+    <textarea name="embedding_instructions" rows="3" class="w-full border border-slate-300 rounded px-2 py-1">{{ ns.embedding_instructions }}</textarea>
+    <button class="bg-blue-600 text-white px-3 py-1.5 rounded">Save</button>
+  </form>
+</div>
+
 {% elif tab == 'stats' %}
 <div class="bg-white rounded-lg border border-slate-200 p-4 text-sm">
   <div><span class="text-slate-500">Entry count:</span> {{ entry_count }}</div>

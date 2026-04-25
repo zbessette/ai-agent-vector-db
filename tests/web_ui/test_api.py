@@ -75,3 +75,72 @@ def test_delete_entry_via_api(client, registry, mock_qdrant):
     response = client.delete("/api/namespaces/alpha/entries/uuid-1")
     assert response.status_code == 204
     mock_qdrant.delete.assert_called_once()
+
+
+def test_create_namespace_via_api(client):
+    response = client.post(
+        "/api/namespaces",
+        json={
+            "name": "newns",
+            "description": "d",
+            "embedding_instructions": "$original_text",
+            "fields": [],
+        },
+    )
+    assert response.status_code == 201
+    assert response.json()["name"] == "newns"
+    assert response.json()["status"] == "proposed"
+
+
+def test_create_namespace_invalid_name(client):
+    response = client.post(
+        "/api/namespaces",
+        json={
+            "name": "bad name",
+            "description": "d",
+            "embedding_instructions": "$original_text",
+            "fields": [],
+        },
+    )
+    assert response.status_code == 422
+
+
+def test_confirm_namespace_via_api(client, registry):
+    registry.create(name="alpha", description="d", embedding_instructions="$x", fields=[])
+    response = client.post("/api/namespaces/alpha/confirm")
+    assert response.status_code == 200
+    assert response.json()["status"] == "active"
+
+
+def test_patch_namespace_via_api(client, registry):
+    registry.create(name="alpha", description="old", embedding_instructions="$x", fields=[])
+    response = client.patch("/api/namespaces/alpha", json={"description": "new"})
+    assert response.status_code == 200
+    assert response.json()["description"] == "new"
+
+
+def test_delete_namespace_via_api(client, registry):
+    registry.create(name="alpha", description="d", embedding_instructions="$x", fields=[])
+    response = client.delete("/api/namespaces/alpha")
+    assert response.status_code == 204
+    assert registry.get("alpha") is None
+
+
+def test_list_entries_pagination_envelope(client, registry, mock_qdrant):
+    from unittest.mock import MagicMock
+    registry.create(name="alpha", description="d", embedding_instructions="$x", fields=[])
+    registry.confirm("alpha")
+
+    fake_point = MagicMock()
+    fake_point.id = "u1"
+    fake_point.payload = {"original_text": "x", "entry_type": "note", "created_at": "2026-04-24T00:00:00+00:00"}
+    scroll_result = MagicMock()
+    scroll_result.points = [fake_point]
+    mock_qdrant.scroll.return_value = scroll_result
+
+    response = client.get("/api/namespaces/alpha/entries?limit=5")
+    assert response.status_code == 200
+    body = response.json()
+    assert "items" in body
+    assert "count" in body
+    assert "limit" in body
