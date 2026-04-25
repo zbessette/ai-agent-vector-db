@@ -170,3 +170,40 @@ def test_reindex_namespace_returns_501(client, registry):
     registry.confirm("alpha")
     response = client.post("/api/namespaces/alpha/reindex")
     assert response.status_code == 501
+
+
+def test_create_namespace_with_explicit_fields(client):
+    response = client.post(
+        "/api/namespaces",
+        json={
+            "name": "explicit",
+            "description": "d",
+            "embedding_instructions": "$original_text",
+            "fields": [
+                {"field_name": "category", "field_type": "string", "required": True,
+                 "description": "Category", "filterable": True},
+                {"field_name": "score", "field_type": "float", "required": False,
+                 "description": "", "filterable": False},
+            ],
+        },
+    )
+    assert response.status_code == 201
+    body = response.json()
+    assert len(body["fields"]) == 2
+    assert {f["field_name"] for f in body["fields"]} == {"category", "score"}
+
+
+def test_create_namespace_with_no_fields_gets_default_text(client):
+    response = client.post(
+        "/api/namespaces",
+        json={
+            "name": "nofields",
+            "description": "d",
+            "embedding_instructions": "$original_text",
+            "fields": [],
+        },
+    )
+    assert response.status_code == 201
+    body = response.json()
+    assert len(body["fields"]) == 1
+    assert body["fields"][0]["field_name"] == "text"

@@ -77,3 +77,30 @@ def test_report_request_rejects_inverted_date_range():
             date_from="2026-04-30T00:00:00+00:00",
             date_to="2026-04-01T00:00:00+00:00",
         )
+
+
+def test_namespace_create_injects_default_text_field_when_empty():
+    req = NamespaceCreateRequest(
+        name="alpha",
+        description="d",
+        embedding_instructions="$original_text",
+        fields=[],
+    )
+    assert len(req.fields) == 1
+    assert req.fields[0].field_name == "text"
+    assert req.fields[0].field_type == "string"
+    assert req.fields[0].required is True
+
+
+def test_namespace_create_preserves_explicit_fields():
+    req = NamespaceCreateRequest(
+        name="alpha",
+        description="d",
+        embedding_instructions="$original_text",
+        fields=[
+            {"field_name": "category", "field_type": "string", "required": True,
+             "description": "c", "filterable": True},
+        ],
+    )
+    assert len(req.fields) == 1
+    assert req.fields[0].field_name == "category"

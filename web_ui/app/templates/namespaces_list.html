@@ -43,27 +43,106 @@
   </table>
 </div>
 {% if show_form %}
-<dialog open class="rounded-lg border border-slate-200 p-4 max-w-lg w-full bg-white mt-6">
+<dialog open class="rounded-lg border border-slate-200 p-4 max-w-2xl w-full bg-white mt-6">
   <h2 class="text-lg font-semibold mb-3">New namespace</h2>
-  <form method="post" action="/namespaces/new" class="space-y-3 text-sm">
+  <div x-data='{
+    name: "",
+    description: "",
+    embedding_instructions: "$original_text",
+    include_context: true,
+    fields: [{ field_name: "text", field_type: "string", required: true, filterable: false, description: "Primary text content" }],
+    error: "",
+    fieldTypes: ["string", "string[]", "int", "float", "bool"],
+    addField() {
+      this.fields.push({ field_name: "", field_type: "string", required: false, filterable: true, description: "" });
+    },
+    removeField(idx) { this.fields.splice(idx, 1); },
+    submit() {
+      this.error = "";
+      const cleanFields = this.fields
+        .filter(f => f.field_name && f.field_name.trim())
+        .map(f => ({
+          field_name: f.field_name.trim(),
+          field_type: f.field_type,
+          required: !!f.required,
+          filterable: !!f.filterable,
+          description: f.description || "",
+        }));
+      fetch("/api/namespaces", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: this.name,
+          description: this.description,
+          embedding_instructions: this.embedding_instructions,
+          include_context: this.include_context,
+          fields: cleanFields,
+        }),
+      }).then(async (r) => {
+        if (r.ok) {
+          window.location.href = `/namespaces/${this.name}`;
+        } else {
+          const body = await r.json().catch(() => ({}));
+          this.error = body.error || JSON.stringify(body) || "Create failed";
+        }
+      });
+    },
+  }' class="space-y-3 text-sm">
+
     <div>
       <label class="block text-slate-600 mb-1">Name <span class="text-red-500">*</span></label>
-      <input name="name" required pattern="[a-zA-Z0-9][a-zA-Z0-9_-]{0,63}" class="w-full border border-slate-300 rounded px-2 py-1">
+      <input x-model="name" required pattern="[a-zA-Z0-9][a-zA-Z0-9_-]{0,63}" maxlength="64" class="w-full border border-slate-300 rounded px-2 py-1">
     </div>
+
     <div>
       <label class="block text-slate-600 mb-1">Description</label>
-      <input name="description" maxlength="2000" class="w-full border border-slate-300 rounded px-2 py-1">
+      <input x-model="description" maxlength="2000" class="w-full border border-slate-300 rounded px-2 py-1">
     </div>
+
     <div>
       <label class="block text-slate-600 mb-1">Embedding instructions <span class="text-red-500">*</span></label>
-      <textarea name="embedding_instructions" required maxlength="4000" rows="3" class="w-full border border-slate-300 rounded px-2 py-1">$original_text</textarea>
+      <textarea x-model="embedding_instructions" required maxlength="4000" rows="3" class="w-full border border-slate-300 rounded px-2 py-1"></textarea>
+      <p class="text-xs text-slate-500 mt-1">Use <code>$field_name</code> to reference field values. Always include <code>$original_text</code>.</p>
     </div>
-    <label class="inline-flex items-center gap-2"><input type="checkbox" name="include_context" checked> Include context</label>
+
+    <label class="inline-flex items-center gap-2"><input type="checkbox" x-model="include_context"> Include context</label>
+
+    <div>
+      <div class="flex items-center justify-between mb-2">
+        <span class="text-slate-600 font-medium">Fields</span>
+        <button type="button" @click="addField" class="text-sm text-blue-600 hover:underline">+ Add field</button>
+      </div>
+      <p class="text-xs text-slate-500 mb-2">A starter <code>text</code> field is included. Edit, remove, or add more as needed.</p>
+
+      <template x-if="fields.length === 0">
+        <p class="text-sm text-slate-500 italic">No fields. Click "Add field" to add one.</p>
+      </template>
+
+      <div class="space-y-2">
+        <template x-for="(f, idx) in fields" :key="idx">
+          <div class="border border-slate-200 rounded p-2 grid grid-cols-1 md:grid-cols-12 gap-2 items-start">
+            <input x-model="f.field_name" placeholder="field_name" pattern="[a-zA-Z_][a-zA-Z0-9_]*" maxlength="64" class="md:col-span-3 border border-slate-300 rounded px-2 py-1">
+            <select x-model="f.field_type" class="md:col-span-2 border border-slate-300 rounded px-2 py-1">
+              <template x-for="t in fieldTypes" :key="t">
+                <option :value="t" x-text="t"></option>
+              </template>
+            </select>
+            <label class="md:col-span-2 inline-flex items-center gap-1 text-xs"><input type="checkbox" x-model="f.required"> Required</label>
+            <label class="md:col-span-2 inline-flex items-center gap-1 text-xs"><input type="checkbox" x-model="f.filterable"> Filterable</label>
+            <input x-model="f.description" placeholder="description (optional)" maxlength="200" class="md:col-span-2 border border-slate-300 rounded px-2 py-1 text-xs">
+            <button type="button" @click="removeField(idx)" class="md:col-span-1 text-red-600 hover:underline text-sm">Remove</button>
+          </div>
+        </template>
+      </div>
+    </div>
+
+    <p x-show="error" x-text="error" class="text-red-600 text-sm" data-error></p>
+
     <div class="flex gap-2 pt-2">
-      <button class="bg-blue-600 text-white px-3 py-1.5 rounded">Create</button>
+      <button type="button" @click="submit" class="bg-blue-600 text-white px-3 py-1.5 rounded">Create</button>
       <a href="/namespaces" class="px-3 py-1.5 rounded border border-slate-300">Cancel</a>
     </div>
-  </form>
+  </div>
 </dialog>
 {% endif %}
 {% endblock %}
