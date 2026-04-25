@@ -37,3 +37,26 @@ services:
       - qdrant
       - ollama
     restart: unless-stopped
+
+  web-ui:
+    build:
+      context: .
+      dockerfile: web_ui/Dockerfile
+    container_name: vector-db-web-ui
+    environment:
+      - QDRANT_HOST=qdrant
+      - QDRANT_PORT=6333
+      - OLLAMA_HOST=ollama
+      - OLLAMA_PORT=11434
+      - EMBEDDING_MODEL=${EMBEDDING_MODEL:-nomic-embed-text}
+      - EMBEDDING_DIMENSIONS=${EMBEDDING_DIMENSIONS:-768}
+      - SQLITE_PATH=/app/data/sqlite/namespaces.db
+      - WEB_UI_PORT=${WEB_UI_PORT:-11489}
+    ports:
+      - "${WEB_UI_PORT:-11489}:11489"
+    volumes:
+      - ./data/sqlite:/app/data/sqlite
+    depends_on:
+      - qdrant
+      - ollama
+    restart: unless-stopped
