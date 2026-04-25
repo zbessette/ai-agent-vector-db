@@ -8,6 +8,8 @@ from qdrant_client.http.exceptions import UnexpectedResponse
 from mcp_server.namespaces import NamespaceRegistry
 from ..deps import get_qdrant, get_registry, get_storage, get_search
 from ..errors import AppError
+from ..services.search_helpers import filter_by_threshold
+from ..services.validation import SearchRequest
 
 logger = logging.getLogger(__name__)
 
@@ -183,17 +185,20 @@ def register(templates: Jinja2Templates) -> APIRouter:
         search_mgr=Depends(get_search),
         registry: NamespaceRegistry = Depends(get_registry),
     ):
-        if not query.strip():
-            raise AppError("Query is required", status_code=400)
-        if registry.get(namespace) is None:
-            raise AppError(f"Namespace '{namespace}' not found", status_code=404)
-        results = search_mgr.search(namespace=namespace, query=query, limit=top_k)
-        if threshold is not None:
-            results = [r for r in results if r["score"] >= threshold]
+        from pydantic import ValidationError
+        try:
+            req = SearchRequest(query=query, namespace=namespace, top_k=top_k, threshold=threshold)
+        except ValidationError as e:
+            # Return 400 (not 422) since this is an HTML route, not the JSON API.
+            raise AppError(f"Invalid search request: {e.errors()[0]['msg']}", status_code=400)
+        if registry.get(req.namespace) is None:
+            raise AppError(f"Namespace '{req.namespace}' not found", status_code=404)
+        results = search_mgr.search(namespace=req.namespace, query=req.query, limit=req.top_k)
+        results = filter_by_threshold(results, req.threshold)
         return templates.TemplateResponse(
             request,
             "partials/search_results.html",
-            {"results": results, "query": query, "namespace": namespace},
+            {"results": results, "query": req.query, "namespace": req.namespace},
         )
 
     return router

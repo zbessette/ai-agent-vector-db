@@ -125,3 +125,34 @@ def test_search_results_partial(client, registry, mock_qdrant):
     assert response.status_code == 200
     assert "uuid-1" in response.text
     assert "0.92" in response.text or "0.9" in response.text
+
+
+def test_search_results_rejects_empty_query(client, registry):
+    registry.create(name="alpha", description="d", embedding_instructions="$original_text", fields=[])
+    registry.confirm("alpha")
+    response = client.get("/search/results?query=&namespace=alpha&top_k=5")
+    assert response.status_code == 400
+
+
+def test_search_results_unknown_namespace(client):
+    response = client.get("/search/results?query=hi&namespace=nope&top_k=5")
+    assert response.status_code == 404
+
+
+def test_search_results_threshold_filters_low_scores(client, registry, mock_qdrant):
+    from unittest.mock import MagicMock
+    registry.create(name="alpha", description="d", embedding_instructions="$original_text", fields=[])
+    registry.confirm("alpha")
+
+    high = MagicMock(); high.id = "high-id"; high.score = 0.9
+    high.payload = {"original_text": "hi", "entry_type": "note", "created_at": "2026-04-24T00:00:00+00:00"}
+    low = MagicMock(); low.id = "low-id"; low.score = 0.3
+    low.payload = {"original_text": "lo", "entry_type": "note", "created_at": "2026-04-24T00:00:00+00:00"}
+    points_result = MagicMock()
+    points_result.points = [high, low]
+    mock_qdrant.query_points.return_value = points_result
+
+    response = client.get("/search/results?query=x&namespace=alpha&top_k=5&threshold=0.5")
+    assert response.status_code == 200
+    assert "high-id" in response.text
+    assert "low-id" not in response.text

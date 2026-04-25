@@ -8,6 +8,7 @@ from mcp_server.search import SearchManager
 
 from ..deps import get_registry, get_storage, get_search
 from ..errors import AppError
+from ..services.search_helpers import filter_by_threshold
 from ..services.validation import (
     EntryCreateRequest, EntryUpdateRequest,
     NamespaceCreateRequest, NamespaceUpdateRequest,
@@ -169,8 +170,7 @@ def register(templates: Jinja2Templates) -> APIRouter:
             )
         except ValueError as e:
             raise AppError(str(e), status_code=400)
-        if body.threshold is not None:
-            items = [r for r in items if r["score"] >= body.threshold]
+        items = filter_by_threshold(items, body.threshold)
         return {"items": items, "total": len(items)}
 
     return router
