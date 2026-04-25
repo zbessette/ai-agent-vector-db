@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}Vector DB{% endblock %}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/htmx.org@2.0.4" defer></script>
+    <script src="https://unpkg.com/alpinejs@3.14.7/dist/cdn.min.js" defer></script>
+    <link rel="stylesheet" href="/static/app.css">
+  </head>
+  <body class="bg-slate-50 text-slate-900 min-h-screen">
+    <header class="bg-white border-b border-slate-200">
+      <div class="max-w-7xl mx-auto px-4 py-3 flex items-center gap-6">
+        <a href="/" class="font-semibold text-slate-900">Vector DB</a>
+        <nav class="flex gap-4 text-sm">
+          <a href="/" class="hover:text-blue-600">Dashboard</a>
+          <a href="/namespaces" class="hover:text-blue-600">Namespaces</a>
+          <a href="/search" class="hover:text-blue-600">Search</a>
+          <a href="/reports" class="hover:text-blue-600">Reports</a>
+        </nav>
+      </div>
+    </header>
+    <main class="max-w-7xl mx-auto px-4 py-6">
+      {% block content %}{% endblock %}
+    </main>
+    <script src="/static/app.js" defer></script>
+  </body>
+</html>

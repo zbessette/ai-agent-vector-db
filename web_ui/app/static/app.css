@@ -1,0 +1,4 @@
+/* Project-specific overrides; Tailwind is loaded via CDN. */
+[data-error] {
+  margin-top: 0.25rem;
+}
