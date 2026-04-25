@@ -48,8 +48,59 @@
 </div>
 
 {% else %}
-<div hx-get="/namespaces/{{ ns.name }}/entries-partial?limit=20" hx-trigger="load" hx-swap="innerHTML">
-  <div class="text-sm text-slate-500">Loading entries...</div>
+<div x-data="{ openNew: false, editingId: null, editingHtml: '' }">
+  <div class="flex justify-end mb-3">
+    <button @click="openNew = true" class="bg-blue-600 text-white text-sm px-3 py-1.5 rounded">Add entry</button>
+  </div>
+
+  <div hx-get="/namespaces/{{ ns.name }}/entries-partial?limit=20"
+       hx-trigger="load, refresh-entries from:body"
+       hx-swap="innerHTML">
+    <div class="text-sm text-slate-500">Loading entries...</div>
+  </div>
+
+  <dialog x-show="openNew" @close="openNew = false" class="rounded-lg border border-slate-200 p-4 max-w-lg w-full bg-white">
+    <h2 class="text-lg font-semibold mb-3">Add entry</h2>
+    <div hx-get="/namespaces/{{ ns.name }}/entries/new" hx-trigger="load" hx-swap="innerHTML"></div>
+  </dialog>
+
+  <dialog x-show="editingId" @close="editingId = null" class="rounded-lg border border-slate-200 p-4 max-w-lg w-full bg-white">
+    <h2 class="text-lg font-semibold mb-3">Edit entry</h2>
+    <div x-html="editingHtml"></div>
+  </dialog>
 </div>
+
+<script>
+  document.addEventListener('alpine:init', () => {
+    Alpine.effect(() => {
+      const root = document.querySelector('[x-data*="openNew"]');
+      if (!root) return;
+      const data = root._x_dataStack ? root._x_dataStack[0] : null;
+      if (!data) return;
+      const dialogs = root.querySelectorAll('dialog');
+      const newDialog = dialogs[0];
+      if (data.openNew && !newDialog.open) newDialog.showModal();
+      if (!data.openNew && newDialog.open) newDialog.close();
+      const editDialog = dialogs[1];
+      if (data.editingId && !editDialog.open) editDialog.showModal();
+      if (!data.editingId && editDialog.open) editDialog.close();
+    });
+  });
+
+  window.openEditEntry = async (ns, id) => {
+    const html = await fetch(`/namespaces/${ns}/entries/${id}/edit`).then(r => r.text());
+    const root = document.querySelector('[x-data*="editingId"]');
+    const data = root._x_dataStack[0];
+    data.editingHtml = html;
+    data.editingId = id;
+  };
+
+  window.deleteEntry = async (ns, id) => {
+    if (!confirm("Delete this entry?")) return;
+    const r = await fetch(`/api/namespaces/${ns}/entries/${id}`, {method: 'DELETE'});
+    if (r.ok) window.location.reload();
+    else alert("Delete failed");
+  };
+</script>
 {% endif %}
 {% endblock %}

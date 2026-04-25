@@ -18,7 +18,8 @@
         <td class="px-4 py-2">{{ text[:120] }}{% if text|length > 120 %}…{% endif %}</td>
         <td class="px-4 py-2 text-xs text-slate-500">{{ e.payload.created_at }}</td>
         <td class="px-4 py-2 text-right">
-          {# Edit/Delete actions added in Task 6 #}
+          <button class="text-blue-600 hover:underline" onclick="window.openEditEntry('{{ ns.name }}', '{{ e.id }}')">Edit</button>
+          <button class="text-red-600 hover:underline ml-2" onclick="window.deleteEntry('{{ ns.name }}', '{{ e.id }}')">Delete</button>
         </td>
       </tr>
       {% else %}

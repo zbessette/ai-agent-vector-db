@@ -5,7 +5,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 from .errors import install_error_handlers
-from .routers import pages
+from .routers import pages, api
 
 TEMPLATES_DIR = Path(__file__).parent / "templates"
 STATIC_DIR = Path(__file__).parent / "static"
@@ -21,6 +21,7 @@ def create_app() -> FastAPI:
     install_error_handlers(app, templates)
 
     app.include_router(pages.register(templates))
+    app.include_router(api.register(templates))
 
     @app.get("/healthz")
     def healthz():

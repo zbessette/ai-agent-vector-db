@@ -123,4 +123,39 @@ def register(templates: Jinja2Templates) -> APIRouter:
             {"ns": ns, "entries": entries, "limit": limit},
         )
 
+    @router.get("/namespaces/{name}/entries/new")
+    def entry_new_form(
+        request: Request,
+        name: str,
+        registry: NamespaceRegistry = Depends(get_registry),
+    ):
+        ns = registry.get(name)
+        if ns is None:
+            raise AppError(f"Namespace '{name}' not found", status_code=404)
+        return templates.TemplateResponse(
+            request,
+            "partials/entry_form.html",
+            {"ns": ns, "entry": None, "errors": {}},
+        )
+
+    @router.get("/namespaces/{name}/entries/{entry_id}/edit")
+    def entry_edit_form(
+        request: Request,
+        name: str,
+        entry_id: str,
+        registry: NamespaceRegistry = Depends(get_registry),
+        storage=Depends(get_storage),
+    ):
+        ns = registry.get(name)
+        if ns is None:
+            raise AppError(f"Namespace '{name}' not found", status_code=404)
+        entry = storage.get(namespace=name, entry_id=entry_id)
+        if entry is None:
+            raise AppError(f"Entry '{entry_id}' not found", status_code=404)
+        return templates.TemplateResponse(
+            request,
+            "partials/entry_form.html",
+            {"ns": ns, "entry": entry, "errors": {}},
+        )
+
     return router

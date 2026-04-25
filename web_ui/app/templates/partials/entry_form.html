@@ -1,0 +1,60 @@
+{% set is_edit = entry is not none %}
+<div x-data='{
+  form: {
+    original_text: {{ (entry.payload.original_text if is_edit else "")|tojson }},
+    entry_type: {{ (entry.payload.entry_type if is_edit else "")|tojson }},
+    payload: {{ (entry.payload if is_edit else {})|tojson }}
+  },
+  submit() {
+    const url = "{{ '/api/namespaces/' ~ ns.name ~ '/entries/' ~ entry.id if is_edit else '/api/namespaces/' ~ ns.name ~ '/entries' }}";
+    const method = "{{ 'PUT' if is_edit else 'POST' }}";
+    const cleaned = {};
+    for (const f of {{ ns.fields|map(attribute='field_name')|list|tojson }}) {
+      if (this.form.payload[f] !== undefined && this.form.payload[f] !== "") cleaned[f] = this.form.payload[f];
+    }
+    fetch(url, {
+      method, headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({
+        original_text: this.form.original_text,
+        entry_type: this.form.entry_type,
+        payload: cleaned,
+      })
+    }).then(r => {
+      if (r.ok) { window.location.reload(); }
+      else { r.json().then(b => { this.error = (b.error || JSON.stringify(b)); }); }
+    });
+  },
+  error: ""
+}' class="space-y-3 text-sm">
+  <div>
+    <label class="block text-slate-600 mb-1">Original text</label>
+    <textarea x-model="form.original_text" required maxlength="100000"
+      class="w-full border border-slate-300 rounded px-2 py-1" rows="4"></textarea>
+  </div>
+  <div>
+    <label class="block text-slate-600 mb-1">Entry type</label>
+    <input x-model="form.entry_type" required maxlength="64"
+      class="w-full border border-slate-300 rounded px-2 py-1">
+  </div>
+  {% for f in ns.fields %}
+  <div>
+    <label class="block text-slate-600 mb-1">
+      {{ f.field_name }}
+      {% if f.required %}<span class="text-red-500">*</span>{% endif %}
+      <span class="text-xs text-slate-400">({{ f.field_type }})</span>
+    </label>
+    <input x-model="form.payload['{{ f.field_name }}']"
+      {% if f.required %}required{% endif %}
+      {% if f.field_type == 'int' %}type="number" step="1"{% elif f.field_type == 'float' %}type="number" step="any"{% endif %}
+      class="w-full border border-slate-300 rounded px-2 py-1">
+    {% if f.description %}<p class="text-xs text-slate-500 mt-1">{{ f.description }}</p>{% endif %}
+  </div>
+  {% endfor %}
+
+  <p x-show="error" x-text="error" class="text-red-600 text-sm" data-error></p>
+
+  <div class="flex gap-2 pt-2">
+    <button @click.prevent="submit" class="bg-blue-600 text-white px-3 py-1.5 rounded">{{ 'Save' if is_edit else 'Create' }}</button>
+    <button type="button" class="px-3 py-1.5 rounded border border-slate-300" onclick="this.closest('dialog').close()">Cancel</button>
+  </div>
+</div>

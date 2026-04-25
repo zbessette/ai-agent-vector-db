@@ -1,0 +1,7 @@
+{% if errors %}
+<ul class="text-red-600 text-sm" data-error>
+{% for field, msg in errors.items() %}
+  <li><span class="font-mono">{{ field }}</span>: {{ msg }}</li>
+{% endfor %}
+</ul>
+{% endif %}
