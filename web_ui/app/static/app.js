@@ -5,7 +5,7 @@ document.addEventListener('alpine:init', () => {
   Alpine.effect(() => {
     const root = document.querySelector('[x-data*="openNew"]');
     if (!root) return;
-    const data = root._x_dataStack ? root._x_dataStack[0] : null;
+    const data = Alpine.$data(root);
     if (!data) return;
     const dialogs = root.querySelectorAll('dialog');
     const newDialog = dialogs[0];
@@ -25,7 +25,7 @@ window.openEditEntry = async (ns, id) => {
   const html = await fetch(`/namespaces/${ns}/entries/${id}/edit`).then(r => r.text());
   const root = document.querySelector('[x-data*="editingId"]');
   if (!root) return;
-  const data = root._x_dataStack[0];
+  const data = Alpine.$data(root);
   data.editingHtml = html;
   data.editingId = id;
 };
