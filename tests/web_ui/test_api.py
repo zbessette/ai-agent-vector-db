@@ -105,11 +105,17 @@ def test_create_namespace_invalid_name(client):
     assert response.status_code == 422
 
 
-def test_confirm_namespace_via_api(client, registry):
+def test_confirm_namespace_via_api(client, registry, mock_qdrant):
     registry.create(name="alpha", description="d", embedding_instructions="$x", fields=[])
+    mock_qdrant.collection_exists.return_value = False
+
     response = client.post("/api/namespaces/alpha/confirm")
     assert response.status_code == 200
     assert response.json()["status"] == "active"
+    mock_qdrant.create_collection.assert_called_once()
+    # At least the common fields get indexed
+    index_names = [c.args[1] for c in mock_qdrant.create_payload_index.call_args_list]
+    assert "entry_type" in index_names
 
 
 def test_patch_namespace_via_api(client, registry):

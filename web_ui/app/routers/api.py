@@ -7,9 +7,11 @@ from fastapi.templating import Jinja2Templates
 from mcp_server.namespaces import NamespaceRegistry
 from mcp_server.storage import StorageManager
 from mcp_server.search import SearchManager
+from mcp_server.qdrant_collections import ensure_namespace_collection
 
-from ..deps import get_registry, get_storage, get_search
+from ..deps import get_registry, get_storage, get_search, get_qdrant
 from ..errors import AppError
+from ..config import EMBEDDING_DIMENSIONS
 from ..services.search_helpers import filter_by_threshold
 from ..services.validation import (
     EntryCreateRequest, EntryUpdateRequest,
@@ -84,11 +86,14 @@ def register(templates: Jinja2Templates) -> APIRouter:
     def confirm_namespace(
         name: str,
         registry: NamespaceRegistry = Depends(get_registry),
+        qdrant=Depends(get_qdrant),
     ):
         try:
-            return registry.confirm(name)
+            ns = registry.confirm(name)
         except ValueError as e:
             raise AppError(str(e), status_code=400)
+        ensure_namespace_collection(qdrant, ns, EMBEDDING_DIMENSIONS)
+        return ns
 
     @router.delete("/namespaces/{name}", status_code=204)
     def delete_namespace(

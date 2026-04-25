@@ -6,7 +6,6 @@ import os
 
 from mcp.server.fastmcp import FastMCP
 from qdrant_client import QdrantClient
-from qdrant_client.models import Distance, VectorParams, PayloadSchemaType
 
 from config import (
     QDRANT_HOST, QDRANT_PORT, OLLAMA_HOST, OLLAMA_PORT,
@@ -17,6 +16,11 @@ from embeddings import OllamaEmbedder
 from storage import StorageManager
 from search import SearchManager
 
+try:
+    from mcp_server.qdrant_collections import ensure_namespace_collection
+except ImportError:
+    from qdrant_collections import ensure_namespace_collection
+
 mcp = FastMCP("vector-db", host="0.0.0.0", port=MCP_SSE_PORT)
 
 # --- Globals initialized in init_services() ---
@@ -24,14 +28,6 @@ registry: NamespaceRegistry = None
 storage: StorageManager = None
 search_mgr: SearchManager = None
 qdrant: QdrantClient = None
-
-FIELD_TYPE_TO_QDRANT_INDEX = {
-    "string": PayloadSchemaType.KEYWORD,
-    "string[]": PayloadSchemaType.KEYWORD,
-    "int": PayloadSchemaType.INTEGER,
-    "float": PayloadSchemaType.FLOAT,
-    "bool": PayloadSchemaType.BOOL,
-}
 
 
 def init_services():
@@ -73,15 +69,8 @@ def bootstrap_context_namespace():
         ],
     )
 
-    if not qdrant.collection_exists("context"):
-        qdrant.create_collection(
-            collection_name="context",
-            vectors_config=VectorParams(size=EMBEDDING_DIMENSIONS, distance=Distance.COSINE),
-        )
-        qdrant.create_payload_index("context", "related_namespaces", PayloadSchemaType.KEYWORD)
-        qdrant.create_payload_index("context", "decision_type", PayloadSchemaType.KEYWORD)
-        qdrant.create_payload_index("context", "entry_type", PayloadSchemaType.KEYWORD)
-        qdrant.create_payload_index("context", "tags", PayloadSchemaType.KEYWORD)
+    ns = registry.get("context")
+    ensure_namespace_collection(qdrant, ns, EMBEDDING_DIMENSIONS)
 
 
 # --- Namespace Management Tools ---
@@ -134,25 +123,7 @@ def confirm_namespace(namespace: str) -> str:
     """Confirm a proposed namespace, creating its Qdrant collection and activating it."""
     try:
         ns = registry.confirm(namespace)
-
-        if not qdrant.collection_exists(ns["qdrant_collection"]):
-            qdrant.create_collection(
-                collection_name=ns["qdrant_collection"],
-                vectors_config=VectorParams(size=EMBEDDING_DIMENSIONS, distance=Distance.COSINE),
-            )
-            # Create payload indexes for filterable fields
-            for field in ns["fields"]:
-                if field["filterable"]:
-                    idx_type = FIELD_TYPE_TO_QDRANT_INDEX.get(field["field_type"])
-                    if idx_type:
-                        qdrant.create_payload_index(
-                            ns["qdrant_collection"], field["field_name"], idx_type
-                        )
-            # Common field indexes
-            qdrant.create_payload_index(ns["qdrant_collection"], "entry_type", PayloadSchemaType.KEYWORD)
-            qdrant.create_payload_index(ns["qdrant_collection"], "tags", PayloadSchemaType.KEYWORD)
-            qdrant.create_payload_index(ns["qdrant_collection"], "source_id", PayloadSchemaType.KEYWORD)
-
+        ensure_namespace_collection(qdrant, ns, EMBEDDING_DIMENSIONS)
         return json.dumps({"status": "active", "namespace": ns["name"]})
     except ValueError as e:
         return json.dumps({"error": str(e)})
