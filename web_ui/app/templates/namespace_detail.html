@@ -17,7 +17,7 @@
 
 {% if tab == 'config' %}
 <div class="bg-white rounded-lg border border-slate-200 p-4 space-y-3 text-sm">
-  <div><span class="text-slate-500">Embedding instructions:</span><pre class="bg-slate-50 p-2 rounded mt-1">{{ ns.embedding_instructions }}</pre></div>
+  <div><span class="text-slate-500">Embedding instructions:</span><pre class="bg-slate-50 p-2 rounded mt-1 whitespace-pre-wrap break-words">{{ ns.embedding_instructions }}</pre></div>
   <div><span class="text-slate-500">Include context:</span> {{ ns.include_context }}</div>
   <div>
     <div class="text-slate-500 mb-1">Fields:</div>
@@ -80,12 +80,12 @@
     <div class="text-sm text-slate-500">Loading entries...</div>
   </div>
 
-  <dialog x-show="openNew" @close="openNew = false" class="rounded-lg border border-slate-200 p-4 max-w-lg w-full bg-white">
+  <dialog x-effect="openNew ? $el.showModal() : $el.close()" @close="openNew = false" class="rounded-lg border border-slate-200 p-4 max-w-lg w-full bg-white">
     <h2 class="text-lg font-semibold mb-3">Add entry</h2>
     <div hx-get="/namespaces/{{ ns.name }}/entries/new" hx-trigger="load" hx-swap="innerHTML"></div>
   </dialog>
 
-  <dialog x-show="editingId" @close="editingId = null" class="rounded-lg border border-slate-200 p-4 max-w-lg w-full bg-white">
+  <dialog x-effect="editingId ? $el.showModal() : $el.close()" @close="editingId = null" class="rounded-lg border border-slate-200 p-4 max-w-lg w-full bg-white">
     <h2 class="text-lg font-semibold mb-3">Edit entry</h2>
     <div x-html="editingHtml"></div>
   </dialog>
