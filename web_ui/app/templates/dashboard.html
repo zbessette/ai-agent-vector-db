@@ -2,5 +2,45 @@
 {% block title %}Dashboard{% endblock %}
 {% block content %}
 <h1 class="text-2xl font-semibold mb-4">Dashboard</h1>
-<p class="text-sm text-slate-500">Wiring check — populated in a later task.</p>
+
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+  <div class="bg-white rounded-lg border border-slate-200 p-4">
+    <div class="text-sm text-slate-500">Total namespaces</div>
+    <div class="text-3xl font-semibold">{{ total_namespaces }}</div>
+  </div>
+  <div class="bg-white rounded-lg border border-slate-200 p-4">
+    <div class="text-sm text-slate-500">Total entries</div>
+    <div class="text-3xl font-semibold">{{ total_entries }}</div>
+  </div>
+  <div class="bg-white rounded-lg border border-slate-200 p-4">
+    <div class="text-sm text-slate-500">Context entries</div>
+    <div class="text-3xl font-semibold">{{ context_count }}</div>
+  </div>
+</div>
+
+<div class="bg-white rounded-lg border border-slate-200">
+  <table class="w-full text-sm">
+    <thead class="bg-slate-50 text-left">
+      <tr>
+        <th class="px-4 py-2">Name</th>
+        <th class="px-4 py-2">Status</th>
+        <th class="px-4 py-2">Entries</th>
+        <th class="px-4 py-2"></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for ns in namespaces %}
+      <tr class="border-t border-slate-100">
+        <td class="px-4 py-2 font-medium">{{ ns.name }}</td>
+        <td class="px-4 py-2">{{ ns.status }}</td>
+        <td class="px-4 py-2">{{ counts[ns.name] }}</td>
+        <td class="px-4 py-2 text-right">
+          <a class="text-blue-600 hover:underline" href="/namespaces/{{ ns.name }}">View</a>
+          <a class="text-blue-600 hover:underline ml-3" href="/search?namespace={{ ns.name }}">Search</a>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
 {% endblock %}

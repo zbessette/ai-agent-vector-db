@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Namespaces{% endblock %}
+{% block content %}
+<div class="flex items-center justify-between mb-4">
+  <h1 class="text-2xl font-semibold">Namespaces</h1>
+  <a href="/namespaces/new" class="bg-blue-600 text-white text-sm px-3 py-2 rounded hover:bg-blue-700">New namespace</a>
+</div>
+
+<form method="get" class="mb-4 flex gap-2 text-sm">
+  <label class="text-slate-600">Status:</label>
+  <select name="status" class="border border-slate-300 rounded px-2 py-1">
+    <option value="" {% if not status_filter %}selected{% endif %}>All</option>
+    <option value="active" {% if status_filter == 'active' %}selected{% endif %}>Active</option>
+    <option value="proposed" {% if status_filter == 'proposed' %}selected{% endif %}>Proposed</option>
+  </select>
+  <button class="bg-slate-200 px-3 py-1 rounded">Filter</button>
+</form>
+
+<div class="bg-white rounded-lg border border-slate-200">
+  <table class="w-full text-sm">
+    <thead class="bg-slate-50 text-left">
+      <tr>
+        <th class="px-4 py-2">Name</th>
+        <th class="px-4 py-2">Status</th>
+        <th class="px-4 py-2">Description</th>
+        <th class="px-4 py-2">Entries</th>
+        <th class="px-4 py-2"></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for ns in namespaces %}
+      <tr class="border-t border-slate-100">
+        <td class="px-4 py-2 font-medium">{{ ns.name }}</td>
+        <td class="px-4 py-2">{{ ns.status }}</td>
+        <td class="px-4 py-2 text-slate-600">{{ ns.description }}</td>
+        <td class="px-4 py-2">{{ counts[ns.name] }}</td>
+        <td class="px-4 py-2 text-right">
+          <a class="text-blue-600 hover:underline" href="/namespaces/{{ ns.name }}">View</a>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}
