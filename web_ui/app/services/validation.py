@@ -38,22 +38,6 @@ class NamespaceCreateRequest(BaseModel):
             raise ValueError("name must match ^[a-zA-Z0-9][a-zA-Z0-9_-]{0,63}$")
         return v
 
-    @model_validator(mode="after")
-    def _ensure_default_field(self):
-        # Provide a sensible starting field so a freshly-proposed namespace
-        # can store entries immediately. Users can edit or remove it later.
-        if not self.fields:
-            self.fields = [
-                FieldSpec(
-                    field_name="text",
-                    field_type="string",
-                    required=True,
-                    description="Primary text content",
-                    filterable=False,
-                ),
-            ]
-        return self
-
 
 class NamespaceUpdateRequest(BaseModel):
     description: Optional[str] = Field(default=None, max_length=2000)

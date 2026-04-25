@@ -27,14 +27,17 @@
   error: ""
 }' class="space-y-3 text-sm">
   <div>
-    <label class="block text-slate-600 mb-1">Original text</label>
+    <label class="block text-slate-600 mb-1">Original text <span class="text-red-500">*</span></label>
     <textarea x-model="form.original_text" required maxlength="100000"
       class="w-full border border-slate-300 rounded px-2 py-1" rows="4"></textarea>
+    <p class="text-xs text-slate-500 mt-1">The primary content for this entry. This is what gets embedded for semantic search.</p>
   </div>
   <div>
-    <label class="block text-slate-600 mb-1">Entry type</label>
+    <label class="block text-slate-600 mb-1">Entry type <span class="text-red-500">*</span></label>
     <input x-model="form.entry_type" required maxlength="64"
+      placeholder="e.g. note, decision, ticket, snippet"
       class="w-full border border-slate-300 rounded px-2 py-1">
+    <p class="text-xs text-slate-500 mt-1">A short free-form category label used for filtering entries within this namespace. Pick whatever vocabulary makes sense for your domain.</p>
   </div>
   {% for f in ns.fields %}
   <div>

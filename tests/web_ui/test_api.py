@@ -193,7 +193,7 @@ def test_create_namespace_with_explicit_fields(client):
     assert {f["field_name"] for f in body["fields"]} == {"category", "score"}
 
 
-def test_create_namespace_with_no_fields_gets_default_text(client):
+def test_create_namespace_with_no_fields_stays_empty(client):
     response = client.post(
         "/api/namespaces",
         json={
@@ -205,8 +205,7 @@ def test_create_namespace_with_no_fields_gets_default_text(client):
     )
     assert response.status_code == 201
     body = response.json()
-    assert len(body["fields"]) == 1
-    assert body["fields"][0]["field_name"] == "text"
+    assert body["fields"] == []
 
 
 def test_list_entries_returns_empty_for_proposed_namespace(client, registry):

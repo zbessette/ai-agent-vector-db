@@ -79,17 +79,14 @@ def test_report_request_rejects_inverted_date_range():
         )
 
 
-def test_namespace_create_injects_default_text_field_when_empty():
+def test_namespace_create_allows_empty_fields():
     req = NamespaceCreateRequest(
         name="alpha",
         description="d",
         embedding_instructions="$original_text",
         fields=[],
     )
-    assert len(req.fields) == 1
-    assert req.fields[0].field_name == "text"
-    assert req.fields[0].field_type == "string"
-    assert req.fields[0].required is True
+    assert req.fields == []
 
 
 def test_namespace_create_preserves_explicit_fields():

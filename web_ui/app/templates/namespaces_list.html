@@ -50,7 +50,7 @@
     description: "",
     embedding_instructions: "$original_text",
     include_context: true,
-    fields: [{ field_name: "text", field_type: "string", required: true, filterable: false, description: "Primary text content" }],
+    fields: [],
     error: "",
     fieldTypes: ["string", "string[]", "int", "float", "bool"],
     addField() {
@@ -112,10 +112,15 @@
         <span class="text-slate-600 font-medium">Fields</span>
         <button type="button" @click="addField" class="text-sm text-blue-600 hover:underline">+ Add field</button>
       </div>
-      <p class="text-xs text-slate-500 mb-2">A starter <code>text</code> field is included. Edit, remove, or add more as needed.</p>
+      <p class="text-xs text-slate-500 mb-2">
+        Optional structured metadata stored alongside each entry. The entry's primary text
+        content is always collected separately as <code>original_text</code> &mdash; you only
+        need fields here if you want to filter or branch the embedding template by additional
+        metadata (e.g. <code>category</code>, <code>priority</code>, <code>source_url</code>).
+      </p>
 
       <template x-if="fields.length === 0">
-        <p class="text-sm text-slate-500 italic">No fields. Click "Add field" to add one.</p>
+        <p class="text-sm text-slate-500 italic">No fields configured. The namespace will accept entries with just <code>original_text</code> and <code>entry_type</code>. Click "Add field" if you want to add structured metadata.</p>
       </template>
 
       <div class="space-y-2">
