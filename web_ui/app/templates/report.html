@@ -109,7 +109,7 @@ window.downloadReport = async (fmt) => {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `{{ result.title }}.${fmt}`;
+  a.download = {{ result.title|tojson }} + '.' + fmt;
   a.click();
   URL.revokeObjectURL(url);
 };

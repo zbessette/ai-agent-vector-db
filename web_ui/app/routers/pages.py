@@ -226,6 +226,7 @@ def register(templates: Jinja2Templates) -> APIRouter:
         registry: NamespaceRegistry = Depends(get_registry),
         storage=Depends(get_storage),
     ):
+        from pydantic import ValidationError
         from ..services.validation import ReportRequest
         from ..services.reports import generate_report
 
@@ -241,7 +242,7 @@ def register(templates: Jinja2Templates) -> APIRouter:
                 max_rows=int(form.get("max_rows") or 1000),
                 format=form.get("format", "html"),
             )
-        except Exception as e:
+        except (ValidationError, ValueError) as e:
             raise AppError(f"Invalid report request: {e}", status_code=422)
 
         if registry.get(req.namespace) is None:

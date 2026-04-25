@@ -234,3 +234,35 @@ def test_reports_api_csv_download(client, registry, mock_qdrant):
     assert response.headers["content-type"].startswith("text/csv")
     assert "# title: csv-report" in response.text
     assert "u1" in response.text
+
+
+def test_reports_api_sanitizes_csv_filename(client, registry, mock_qdrant):
+    from unittest.mock import MagicMock
+    registry.create(name="alpha", description="d", embedding_instructions="$original_text", fields=[])
+    registry.confirm("alpha")
+
+    fake_point = MagicMock()
+    fake_point.id = "u1"
+    fake_point.payload = {"original_text": "x", "entry_type": "note", "created_at": "2026-04-15T00:00:00+00:00"}
+    scroll_result = MagicMock()
+    scroll_result.points = [fake_point]
+    mock_qdrant.scroll.return_value = scroll_result
+
+    response = client.post(
+        "/api/reports/generate",
+        json={
+            "title": 'evil"; filename="pwn',
+            "namespace": "alpha",
+            "columns": ["id"],
+            "max_rows": 100,
+            "format": "csv",
+        },
+    )
+    assert response.status_code == 200
+    cd = response.headers["content-disposition"]
+    # No raw double-quotes from the title leaked into the header
+    assert 'filename="evil"' not in cd
+    assert 'pwn' in cd  # the safe slug still preserves the alnum tail
+    # The header has exactly the expected attachment shape
+    assert cd.startswith('attachment; filename="')
+    assert cd.endswith('.csv"')

@@ -1,4 +1,6 @@
 """JSON /api/* routes — mirror of the HTML pages, ready for external clients."""
+import re
+
 from fastapi import APIRouter, Depends, Response
 from fastapi.templating import Jinja2Templates
 
@@ -16,6 +18,15 @@ from ..services.validation import (
 )
 from ..services.validation import ReportRequest as ReportRequestModel
 from ..services.reports import generate_report as _gen_report, render_csv as _render_csv, render_json as _render_json
+
+_FILENAME_SAFE = re.compile(r"[^A-Za-z0-9._-]+")
+
+
+def _safe_filename(title: str, ext: str) -> str:
+    slug = _FILENAME_SAFE.sub("_", title).strip("._-")
+    if not slug:
+        slug = "report"
+    return f"{slug[:120]}.{ext}"
 
 
 def register(templates: Jinja2Templates) -> APIRouter:
@@ -169,7 +180,7 @@ def register(templates: Jinja2Templates) -> APIRouter:
             return Response(
                 content=_render_csv(result),
                 media_type="text/csv",
-                headers={"Content-Disposition": f'attachment; filename="{body.title}.csv"'},
+                headers={"Content-Disposition": f'attachment; filename="{_safe_filename(body.title, "csv")}"'},
             )
         if body.format == "json":
             return Response(
